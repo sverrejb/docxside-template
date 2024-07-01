@@ -18,6 +18,13 @@ pub struct {name} {
 
 //TODO: Function to include types in consumer.
 
+#[macro_export]
+macro_rules! include_templates {
+    () => {
+        include!(concat!(env!("OUT_DIR"), "/templates.rs"));
+    };
+}
+
 fn generate_type_name(filename: OsString) -> Result<String, String> {
     if let Ok(file_name_string) = filename.into_string() {
         //TODO update to docx
