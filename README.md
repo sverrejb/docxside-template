@@ -1,1 +1,1 @@
-# Docxside Templates - Typesafe MS Word templates
+# Docxside Templates - Type safe MS Word templates
