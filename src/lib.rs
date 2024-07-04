@@ -64,18 +64,13 @@ pub fn generate_types(template_path: &str) {
     println!("OUT_DIR: {:?}", out_dir);
 
     let template_dir = Path::new(template_path);
-    let mut generated_types_file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(dest_path)
-        .unwrap();
 
     if let Ok(files) = fs::read_dir(template_dir) {
+        let mut structs = vec![];
         for dir_entry in files {
             let file_path = dir_entry.as_ref().unwrap().path();
             let fmt = FileFormat::from_file(&file_path).unwrap();
-            // ignore non-docx files
+            // ignore and skip non-docx files
             if fmt.extension() != "docx" {
                 continue;
             }
@@ -91,9 +86,8 @@ pub fn generate_types(template_path: &str) {
                             TYPE_TEMPLATE.replace("{name}", type_name.as_str());
                         formatted_string =
                             formatted_string.replace("[props]", get_props(&doc).as_str());
-                        generated_types_file
-                            .write_all(formatted_string.as_bytes())
-                            .unwrap();
+
+                        structs.push(formatted_string);
                     }
                 }
 
@@ -101,8 +95,16 @@ pub fn generate_types(template_path: &str) {
                     println!("Error opening file: {}", e);
                 }
             }
+        }
+        let mut generated_types_file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(dest_path)
+            .unwrap();
 
-            //TOOD: handle errors
+        for s in structs {
+            generated_types_file.write_all(s.as_bytes()).unwrap()
         }
     }
 }
