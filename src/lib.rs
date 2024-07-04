@@ -6,6 +6,7 @@ use std::{
     path::Path,
 };
 
+use file_format::FileFormat;
 use heck::AsPascalCase;
 
 const TYPE_TEMPLATE: &str = "
@@ -25,12 +26,16 @@ macro_rules! include_templates {
     };
 }
 
+fn remove_extension(filename: &str) -> String {
+    match filename.rfind('.') {
+        Some(index) => filename[..index].to_owned(),
+        None => filename.to_owned(),
+    }
+}
+
 fn generate_type_name(filename: OsString) -> Result<String, String> {
     if let Ok(file_name_string) = filename.into_string() {
-        //TODO update to docx
-        //TODO handle multiple things that makes a non-valid rust type name
-        let mut type_name = file_name_string.replace(".txt", "");
-        type_name = type_name.replace(".", "_");
+        let mut type_name = remove_extension(file_name_string.as_str());
         type_name = format!("{}", AsPascalCase(type_name));
         return Ok(type_name);
     }
@@ -46,13 +51,20 @@ pub fn generate_types(template_path: &str) {
     let template_dir = Path::new(template_path);
     let mut generated_types_file = OpenOptions::new()
         .write(true)
+        .create(true)
         .truncate(true)
         .open(dest_path)
         .unwrap();
 
-    //TODO: only handle docx-files, igonore others
     if let Ok(files) = fs::read_dir(template_dir) {
         for file in files {
+            let f = file.as_ref().unwrap();
+            let fmt = FileFormat::from_file(f.path()).unwrap();
+            // ignore non-docx files
+            if fmt.extension() != "docx" {
+                continue;
+            }
+
             //TOOD: handle errors
             if let Ok(type_name) = generate_type_name(file.unwrap().file_name()) {
                 let formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
