@@ -16,6 +16,18 @@ const TYPE_TEMPLATE: &str = "
 pub struct {name} {
     [props]
 }
+
+impl Template for {name} {
+        fn save(&self) {
+            println!(\"{}\", \"Saved!\")
+        }
+    }
+";
+
+const TYPE_TRAIT: &str = "
+pub trait Template {
+    fn save(&self);
+}
 ";
 
 #[macro_export]
@@ -30,6 +42,9 @@ fn remove_extension(filename: &str) -> String {
         Some(index) => filename[..index].to_owned(),
         None => filename.to_owned(),
     }
+}
+pub trait DocTemplate {
+    fn save(&self);
 }
 
 fn generate_type_name(filename: OsString) -> Result<String, String> {
@@ -62,17 +77,17 @@ pub fn generate_types(template_path: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("templates.rs");
 
-    println!("OUT_DIR: {:?}", out_dir);
-
     let template_dir = Path::new(template_path);
 
     if let Ok(files) = fs::read_dir(template_dir) {
         let structs: Vec<String> = files
             .filter_map(Result::ok)
-            .par_bridge() // Convert to a parallel iterator
+            .par_bridge()
             .filter_map(|dir_entry| {
                 let file_path = dir_entry.path();
                 let fmt = FileFormat::from_file(&file_path).ok()?;
+
+                // if not docx, skip file
                 if fmt.extension() != "docx" {
                     return None;
                 }
@@ -88,13 +103,17 @@ pub fn generate_types(template_path: &str) {
 
                 Some(formatted_string)
             })
-            .collect(); // Collect results into a vector
+            .collect();
 
         let mut generated_types_file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
             .open(dest_path)
+            .unwrap();
+
+        generated_types_file
+            .write_all(TYPE_TRAIT.as_bytes())
             .unwrap();
 
         for s in structs {
