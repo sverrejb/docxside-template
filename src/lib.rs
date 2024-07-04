@@ -17,17 +17,14 @@ pub struct {name} {
     [props]
 }
 
-impl Template for {name} {
-        fn save(&self) {
-            println!(\"{}\", \"Saved!\")
+impl Filename for {name} {
+        fn get_filename(&self) -> String{
+            \"{name}\".to_owned()
         }
     }
 ";
 
-const TYPE_TRAIT: &str = "
-pub trait Template {
-    fn save(&self);
-}
+const TRAIT_IMPORT: &str = "use docxside_templates::Filename;
 ";
 
 #[macro_export]
@@ -43,8 +40,18 @@ fn remove_extension(filename: &str) -> String {
         None => filename.to_owned(),
     }
 }
-pub trait DocTemplate {
+pub trait Filename {
+    fn get_filename(&self) -> String;
+}
+
+pub trait Save {
     fn save(&self);
+}
+
+impl<T: Filename> Save for T {
+    fn save(&self) {
+        println!("Saved {}", self.get_filename())
+    }
 }
 
 fn generate_type_name(filename: OsString) -> Result<String, String> {
@@ -113,7 +120,7 @@ pub fn generate_types(template_path: &str) {
             .unwrap();
 
         generated_types_file
-            .write_all(TYPE_TRAIT.as_bytes())
+            .write_all(TRAIT_IMPORT.as_bytes())
             .unwrap();
 
         for s in structs {
