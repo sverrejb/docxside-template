@@ -3,6 +3,7 @@ use docx_rs::Docx;
 use file_format::FileFormat;
 use heck::AsPascalCase;
 use heck::AsSnakeCase;
+use rayon::prelude::*;
 use std::{
     env,
     ffi::OsString,
@@ -66,36 +67,29 @@ pub fn generate_types(template_path: &str) {
     let template_dir = Path::new(template_path);
 
     if let Ok(files) = fs::read_dir(template_dir) {
-        let mut structs = vec![];
-        for dir_entry in files {
-            let file_path = dir_entry.as_ref().unwrap().path();
-            let fmt = FileFormat::from_file(&file_path).unwrap();
-            // ignore and skip non-docx files
-            if fmt.extension() != "docx" {
-                continue;
-            }
-
-            match File::open(file_path) {
-                Ok(mut file) => {
-                    let mut buf = vec![];
-                    let _ = file.read_to_end(&mut buf);
-                    let doc = read_docx(&buf).unwrap();
-
-                    if let Ok(type_name) = generate_type_name(dir_entry.unwrap().file_name()) {
-                        let mut formatted_string =
-                            TYPE_TEMPLATE.replace("{name}", type_name.as_str());
-                        formatted_string =
-                            formatted_string.replace("[props]", get_props(&doc).as_str());
-
-                        structs.push(formatted_string);
-                    }
+        let structs: Vec<String> = files
+            .filter_map(Result::ok)
+            .par_bridge() // Convert to a parallel iterator
+            .filter_map(|dir_entry| {
+                let file_path = dir_entry.path();
+                let fmt = FileFormat::from_file(&file_path).ok()?;
+                if fmt.extension() != "docx" {
+                    return None;
                 }
 
-                Err(e) => {
-                    println!("Error opening file: {}", e);
-                }
-            }
-        }
+                let mut file = File::open(file_path).ok()?;
+                let mut buf = vec![];
+                let _ = file.read_to_end(&mut buf);
+                let doc = read_docx(&buf).ok()?;
+
+                let type_name = generate_type_name(dir_entry.file_name()).ok()?;
+                let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
+                formatted_string = formatted_string.replace("[props]", get_props(&doc).as_str());
+
+                Some(formatted_string)
+            })
+            .collect(); // Collect results into a vector
+
         let mut generated_types_file = OpenOptions::new()
             .write(true)
             .create(true)
