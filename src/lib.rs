@@ -19,7 +19,7 @@ pub struct {name} {
 
 impl Filename for {name} {
         fn get_filename(&self) -> String{
-            \"{name}\".to_owned()
+            \"{file_name}\".to_owned()
         }
     }
 ";
@@ -99,7 +99,7 @@ pub fn generate_types(template_path: &str) {
                     return None;
                 }
 
-                let mut file = File::open(file_path).ok()?;
+                let mut file = File::open(&file_path).ok()?;
                 let mut buf = vec![];
                 let _ = file.read_to_end(&mut buf);
                 let doc = read_docx(&buf).ok()?;
@@ -107,6 +107,8 @@ pub fn generate_types(template_path: &str) {
                 let type_name = generate_type_name(dir_entry.file_name()).ok()?;
                 let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
                 formatted_string = formatted_string.replace("[props]", get_props(&doc).as_str());
+                formatted_string =
+                    formatted_string.replace("{file_name}", file_path.as_path().to_str().unwrap());
 
                 Some(formatted_string)
             })
