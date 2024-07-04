@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 file-format = { version = "0.25.0", features = ["reader-zip"] }
 heck = "0.5.0"
+docx-rs = "0.4.17"
