@@ -4,6 +4,7 @@ use file_format::FileFormat;
 use heck::AsPascalCase;
 use heck::AsSnakeCase;
 use rayon::prelude::*;
+use std::collections::HashMap;
 use std::{
     env,
     ffi::OsString,
@@ -14,17 +15,23 @@ use std::{
 
 const TYPE_TEMPLATE: &str = "
 pub struct {name} {
-    [props]
+    {fields}
 }
 
 impl Filename for {name} {
         fn get_filename(&self) -> String{
             \"{file_name}\".to_owned()
         }
+
+        fn get_fields(&self) -> Vec<&str>{
+            {fields_vector}
+        }
+
     }
 ";
 
 const TRAIT_IMPORT: &str = "use docxside_templates::Filename;
+use std::collections::HashMap;
 ";
 
 #[macro_export]
@@ -42,6 +49,7 @@ fn remove_extension(filename: &str) -> String {
 }
 pub trait Filename {
     fn get_filename(&self) -> String;
+    fn get_fields(&self) -> Vec<&str>;
 }
 
 pub trait Save {
@@ -54,7 +62,7 @@ impl<T: Filename> Save for T {
     }
 }
 
-fn generate_type_name(filename: OsString) -> Result<String, String> {
+fn derive_type_name_from_filename(filename: OsString) -> Result<String, String> {
     if let Ok(file_name_string) = filename.into_string() {
         let mut type_name = remove_extension(file_name_string.as_str());
         type_name = type_name
@@ -64,6 +72,11 @@ fn generate_type_name(filename: OsString) -> Result<String, String> {
         return Ok(type_name);
     }
     Err("Could not convert filename to string".to_owned())
+}
+
+fn get_template_variables(doc: &Docx) -> Vec<String> {
+    let props = &doc.doc_props.custom.properties;
+    props.clone().into_keys().collect()
 }
 
 fn get_props(doc: &Docx) -> String {
@@ -78,6 +91,31 @@ fn get_props(doc: &Docx) -> String {
         fields_str.push_str(&format!("{}: {},\n", field_name, rust_type));
     }
     fields_str
+}
+
+fn build_fields_string(fields: &Vec<String>) -> String {
+    let mut fields_string = String::new();
+
+    for field in fields {
+        let rust_type = "String";
+        //TODO: handle all illegal characters
+        let mut field_name = field.replace(" ", "_");
+        field_name = field_name.replace(":", "_");
+        field_name = format!("{}", AsSnakeCase(field_name));
+        fields_string.push_str(&format!("{}: {},\n", field_name, rust_type));
+
+        //field_string.push_str(field.as_str())
+    }
+
+    fields_string
+}
+
+fn build_fields_vector(fields: &Vec<String>) -> String {
+    let mut result = String::from("vec![");
+    let formatted_elements: Vec<String> = fields.iter().map(|s| format!("\"{}\"", s)).collect();
+    result.push_str(&formatted_elements.join(", "));
+    result.push(']');
+    result
 }
 
 pub fn generate_types(template_path: &str) {
@@ -104,11 +142,18 @@ pub fn generate_types(template_path: &str) {
                 let _ = file.read_to_end(&mut buf);
                 let doc = read_docx(&buf).ok()?;
 
-                let type_name = generate_type_name(dir_entry.file_name()).ok()?;
+                let type_name = derive_type_name_from_filename(dir_entry.file_name()).ok()?;
+                let template_variables = get_template_variables(&doc);
+                let fields_string = build_fields_string(&template_variables);
+                let fields_vector = build_fields_vector(&template_variables);
+
                 let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
-                formatted_string = formatted_string.replace("[props]", get_props(&doc).as_str());
+
+                formatted_string = formatted_string.replace("{fields}", fields_string.as_str());
                 formatted_string =
                     formatted_string.replace("{file_name}", file_path.as_path().to_str().unwrap());
+                formatted_string =
+                    formatted_string.replace("{fields_vector}", fields_vector.as_str());
 
                 Some(formatted_string)
             })
