@@ -23,7 +23,7 @@ impl Filename for {name} {
             \"{file_name}\".to_owned()
         }
 
-        fn get_fields(&self) -> Vec<&str>{
+        fn get_fields(&self) -> HashMap<&str, &String>{
             {fields_vector}
         }
 
@@ -49,7 +49,7 @@ fn remove_extension(filename: &str) -> String {
 }
 pub trait Filename {
     fn get_filename(&self) -> String;
-    fn get_fields(&self) -> Vec<&str>;
+    fn get_fields(&self) -> HashMap<&str, &String>;
 }
 
 pub trait Save {
@@ -58,7 +58,10 @@ pub trait Save {
 
 impl<T: Filename> Save for T {
     fn save(&self) {
-        println!("Saved {}", self.get_filename())
+        println!("Saved {}", self.get_filename());
+        for (key, value) in self.get_fields() {
+            println!("{}, will be replaced with {}", key, value);
+        }
     }
 }
 
@@ -93,7 +96,7 @@ fn get_props(doc: &Docx) -> String {
     fields_str
 }
 
-fn build_fields_string(fields: &Vec<String>) -> String {
+fn build_struct_fields(fields: &Vec<String>) -> String {
     let mut fields_string = String::new();
 
     for field in fields {
@@ -110,11 +113,29 @@ fn build_fields_string(fields: &Vec<String>) -> String {
     fields_string
 }
 
-fn build_fields_vector(fields: &Vec<String>) -> String {
-    let mut result = String::from("vec![");
-    let formatted_elements: Vec<String> = fields.iter().map(|s| format!("\"{}\"", s)).collect();
-    result.push_str(&formatted_elements.join(", "));
-    result.push(']');
+fn variable_to_field_name(variable: &String) -> String {
+    let mut field_name = variable.replace(" ", "_");
+    field_name = field_name.replace(":", "_");
+    field_name = format!("{}", AsSnakeCase(field_name));
+    field_name
+}
+
+//TODO: rename
+fn build_variable_to_field_map(variables: &Vec<String>) -> String {
+    let mut result = String::from("let mut map = HashMap::new();\n");
+
+    for variable in variables {
+        let field_name = variable_to_field_name(variable);
+        let row = "map.insert(\"{key}\", &self.{value});\n";
+        let mut modified_row = row.replace("{key}", variable.as_str());
+        modified_row = modified_row.replace("{value}", &field_name.as_str());
+
+        result.push_str(&modified_row);
+    }
+
+    //let formatted_elements: Vec<String> = fields.iter().map(|s| format!("\"{}\"", s)).collect();
+    //result.push_str(&formatted_elements.join(", "));
+    result.push_str("map");
     result
 }
 
@@ -144,16 +165,15 @@ pub fn generate_types(template_path: &str) {
 
                 let type_name = derive_type_name_from_filename(dir_entry.file_name()).ok()?;
                 let template_variables = get_template_variables(&doc);
-                let fields_string = build_fields_string(&template_variables);
-                let fields_vector = build_fields_vector(&template_variables);
+                let fields_string = build_struct_fields(&template_variables);
+                let fields_map = build_variable_to_field_map(&template_variables);
 
                 let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
 
                 formatted_string = formatted_string.replace("{fields}", fields_string.as_str());
                 formatted_string =
                     formatted_string.replace("{file_name}", file_path.as_path().to_str().unwrap());
-                formatted_string =
-                    formatted_string.replace("{fields_vector}", fields_vector.as_str());
+                formatted_string = formatted_string.replace("{fields_vector}", fields_map.as_str());
 
                 Some(formatted_string)
             })
