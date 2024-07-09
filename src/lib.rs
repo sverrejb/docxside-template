@@ -1,9 +1,8 @@
 use docx_rs::read_docx;
 use docx_rs::Docx;
 use file_format::FileFormat;
-use heck::AsPascalCase;
-use heck::AsSnakeCase;
-use rayon::prelude::*;
+use heck::{AsPascalCase, AsSnakeCase};
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use std::collections::HashMap;
 use std::{
     env,
@@ -12,6 +11,12 @@ use std::{
     io::{Read, Write},
     path::Path,
 };
+
+const MODULE_PRELUDE: &str = "
+pub mod templates {
+    use docxside_templates::Filename;
+    use std::collections::HashMap;
+";
 
 const TYPE_TEMPLATE: &str = "
 pub struct {name} {
@@ -24,14 +29,10 @@ impl Filename for {name} {
         }
 
         fn get_fields(&self) -> HashMap<&str, &String>{
-            {fields_vector}
+            {get_fields_body}
         }
 
     }
-";
-
-const TRAIT_IMPORT: &str = "use docxside_templates::Filename;
-use std::collections::HashMap;
 ";
 
 #[macro_export]
@@ -47,6 +48,15 @@ fn remove_extension(filename: &str) -> String {
         None => filename.to_owned(),
     }
 }
+
+fn variable_to_field_name(variable: &String) -> String {
+    let mut field_name = variable.replace(" ", "_");
+    //TODO: handle all illegal characters
+    field_name = field_name.replace(":", "_");
+    field_name = format!("{}", AsSnakeCase(field_name));
+    field_name
+}
+
 pub trait Filename {
     fn get_filename(&self) -> String;
     fn get_fields(&self) -> HashMap<&str, &String>;
@@ -59,6 +69,7 @@ pub trait Save {
 impl<T: Filename> Save for T {
     fn save(&self) {
         println!("Saved {}", self.get_filename());
+        //TODO: actually do save
         for (key, value) in self.get_fields() {
             println!("{}, will be replaced with {}", key, value);
         }
@@ -82,46 +93,18 @@ fn get_template_variables(doc: &Docx) -> Vec<String> {
     props.clone().into_keys().collect()
 }
 
-fn get_props(doc: &Docx) -> String {
-    let props = &doc.doc_props.custom.properties;
-    let mut fields_str = String::new();
-    for (key, _) in props {
-        let rust_type = "String";
-        //TODO: handle all illegal characters
-        let mut field_name = key.replace(" ", "_");
-        field_name = field_name.replace(":", "_");
-        field_name = format!("{}", AsSnakeCase(field_name));
-        fields_str.push_str(&format!("{}: {},\n", field_name, rust_type));
-    }
-    fields_str
-}
-
 fn build_struct_fields(fields: &Vec<String>) -> String {
     let mut fields_string = String::new();
 
     for field in fields {
-        let rust_type = "String";
-        //TODO: handle all illegal characters
-        let mut field_name = field.replace(" ", "_");
-        field_name = field_name.replace(":", "_");
-        field_name = format!("{}", AsSnakeCase(field_name));
-        fields_string.push_str(&format!("{}: {},\n", field_name, rust_type));
-
-        //field_string.push_str(field.as_str())
+        let field_name = variable_to_field_name(field);
+        fields_string.push_str(&format!("pub {}: String,\n", field_name));
     }
 
     fields_string
 }
 
-fn variable_to_field_name(variable: &String) -> String {
-    let mut field_name = variable.replace(" ", "_");
-    field_name = field_name.replace(":", "_");
-    field_name = format!("{}", AsSnakeCase(field_name));
-    field_name
-}
-
-//TODO: rename
-fn build_variable_to_field_map(variables: &Vec<String>) -> String {
+fn build_get_fields_body(variables: &Vec<String>) -> String {
     let mut result = String::from("let mut map = HashMap::new();\n");
 
     for variable in variables {
@@ -133,8 +116,6 @@ fn build_variable_to_field_map(variables: &Vec<String>) -> String {
         result.push_str(&modified_row);
     }
 
-    //let formatted_elements: Vec<String> = fields.iter().map(|s| format!("\"{}\"", s)).collect();
-    //result.push_str(&formatted_elements.join(", "));
     result.push_str("map");
     result
 }
@@ -166,14 +147,15 @@ pub fn generate_types(template_path: &str) {
                 let type_name = derive_type_name_from_filename(dir_entry.file_name()).ok()?;
                 let template_variables = get_template_variables(&doc);
                 let fields_string = build_struct_fields(&template_variables);
-                let fields_map = build_variable_to_field_map(&template_variables);
+                let get_fields_body = build_get_fields_body(&template_variables);
 
                 let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
 
                 formatted_string = formatted_string.replace("{fields}", fields_string.as_str());
                 formatted_string =
                     formatted_string.replace("{file_name}", file_path.as_path().to_str().unwrap());
-                formatted_string = formatted_string.replace("{fields_vector}", fields_map.as_str());
+                formatted_string =
+                    formatted_string.replace("{get_fields_body}", get_fields_body.as_str());
 
                 Some(formatted_string)
             })
@@ -187,11 +169,13 @@ pub fn generate_types(template_path: &str) {
             .unwrap();
 
         generated_types_file
-            .write_all(TRAIT_IMPORT.as_bytes())
+            .write_all(MODULE_PRELUDE.as_bytes())
             .unwrap();
 
         for s in structs {
             generated_types_file.write_all(s.as_bytes()).unwrap()
         }
+
+        generated_types_file.write_all("\n}".as_bytes()).unwrap();
     }
 }
