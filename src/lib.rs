@@ -63,16 +63,20 @@ pub trait Filename {
 }
 
 pub trait Save {
-    fn save(&self);
+    fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 impl<T: Filename> Save for T {
-    fn save(&self) {
-        println!("Saved {}", self.get_filename());
+    fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
+        println!("Saving template {}", self.get_filename());
         //TODO: actually do save
         for (key, value) in self.get_fields() {
             println!("{}, will be replaced with {}", key, value);
         }
+
+        let mut file = File::create(path)?;
+        file.write_all("blabla".as_bytes())?;
+        Ok(())
     }
 }
 
