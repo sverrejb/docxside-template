@@ -74,6 +74,10 @@ impl<T: Filename> Save for T {
             println!("{}, will be replaced with {}", key, value);
         }
 
+        // algoritme:
+        // slett custom props
+        // find-replace strengen, MEN: kun der den faktisk skal byttast ut. Korleis sjekke det? (sjekk opp antagelse om at strengen alltid er i doc'et?). Kva gjer ein visst ikkje? :S
+
         let mut file = File::create(path)?;
         file.write_all("blabla".as_bytes())?;
         Ok(())
@@ -92,9 +96,12 @@ fn derive_type_name_from_filename(filename: OsString) -> Result<String, String> 
     Err("Could not convert filename to string".to_owned())
 }
 
-fn get_template_variables(doc: &Docx) -> Vec<String> {
-    let props = &doc.doc_props.custom.properties;
-    props.clone().into_keys().collect()
+fn get_template_variables_map(doc: &Docx) -> HashMap<String, String> {
+    doc.doc_props.custom.properties.clone()
+}
+
+fn get_template_variable_keys(map: &HashMap<String, String>) -> Vec<String> {
+    map.keys().cloned().collect()
 }
 
 fn build_struct_fields(fields: &Vec<String>) -> String {
@@ -127,7 +134,6 @@ fn build_get_fields_body(variables: &Vec<String>) -> String {
 pub fn generate_types(template_path: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("templates.rs");
-
     let template_dir = Path::new(template_path);
 
     if let Ok(files) = fs::read_dir(template_dir) {
@@ -149,9 +155,10 @@ pub fn generate_types(template_path: &str) {
                 let doc = read_docx(&buf).ok()?;
 
                 let type_name = derive_type_name_from_filename(dir_entry.file_name()).ok()?;
-                let template_variables = get_template_variables(&doc);
-                let fields_string = build_struct_fields(&template_variables);
-                let get_fields_body = build_get_fields_body(&template_variables);
+                let template_variables = get_template_variables_map(&doc);
+                let template_keys = get_template_variable_keys(&template_variables);
+                let fields_string = build_struct_fields(&template_keys);
+                let get_fields_body = build_get_fields_body(&template_keys);
 
                 let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
 
