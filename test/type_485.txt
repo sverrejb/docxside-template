@@ -1,3 +1,0 @@
-Test485
-foo
-bar

@@ -1,3 +1,0 @@
-Test640
-foo
-bar

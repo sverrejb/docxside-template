@@ -1,3 +1,0 @@
-Test16
-foo
-bar

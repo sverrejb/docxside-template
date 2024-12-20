@@ -1,3 +1,0 @@
-Test718
-foo
-bar
