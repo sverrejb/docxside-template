@@ -1,8 +1,10 @@
 extern crate proc_macro;
-use std::fs;
+mod foo;
 
+use foo::derive_type_name_from_filename;
 use proc_macro::TokenStream;
 use quote::quote;
+use std::fs;
 use syn;
 
 #[proc_macro]
@@ -25,14 +27,15 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             _ => continue,
         }
 
-        let content = fs::read_to_string(&path).expect("Failed to read the file");
-        let mut lines = content.lines();
-        let type_name = lines.next().expect("File is empty").trim();
+        let type_name = derive_type_name_from_filename(path);
 
         // Validate that the type name is a valid Rust identifier
         if !syn::parse_str::<syn::Ident>(type_name).is_ok() {
             panic!("Invalid type name in file: {}", type_name);
         }
+
+        let content = fs::read_to_string(&path).expect("Failed to read the file");
+        let mut lines = content.lines();
 
         // The remaining lines are the field names
         let fields: Vec<syn::Ident> = lines

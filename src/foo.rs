@@ -1,9 +1,10 @@
 use docx_rs::read_docx;
 use docx_rs::Docx;
 use file_format::FileFormat;
-use heck::{AsPascalCase, AsSnakeCase};
+use heck::{AsPascalCase, AsSnakeCase, ToPascalCase};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::{
     env,
     ffi::OsString,
@@ -35,7 +36,7 @@ impl Filename for {name} {
     }
 ";
 
-#[macro_export]
+//#[macro_export]
 macro_rules! include_templates {
     () => {
         include!(concat!(env!("OUT_DIR"), "/templates.rs"));
@@ -49,7 +50,7 @@ fn remove_extension(filename: &str) -> String {
     }
 }
 
-fn variable_to_field_name(variable: &String) -> String {
+pub fn variable_to_field_name(variable: &String) -> String {
     let mut field_name = variable.replace(" ", "_");
     //TODO: handle all illegal characters
     field_name = field_name.replace(":", "_");
@@ -84,16 +85,23 @@ impl<T: Filename> Save for T {
     }
 }
 
-fn derive_type_name_from_filename(filename: OsString) -> Result<String, String> {
-    if let Ok(file_name_string) = filename.into_string() {
-        let mut type_name = remove_extension(file_name_string.as_str());
-        type_name = type_name
-            .trim_start_matches(|c: char| c.is_numeric())
-            .to_string();
-        type_name = format!("{}", AsPascalCase(type_name));
-        return Ok(type_name);
+pub fn derive_type_name_from_filename(filename: PathBuf) -> Result<String, String> {
+    // Extract the file stem (filename without extension)
+    let file_stem = filename
+        .file_stem()
+        .ok_or_else(|| "Could not extract file stem".to_owned())?
+        .to_str()
+        .ok_or_else(|| "Could not convert file stem to string".to_owned())?;
+
+    // Convert to CamelCase to follow Rust's naming conventions for types
+    let type_name = file_stem.to_pascal_case();
+
+    // Validate that the type name is a valid Rust identifier
+    if syn::parse_str::<syn::Ident>(&type_name).is_err() {
+        return Err("Invalid type name derived from filename".to_owned());
     }
-    Err("Could not convert filename to string".to_owned())
+
+    Ok(type_name)
 }
 
 fn get_template_variables_map(doc: &Docx) -> HashMap<String, String> {
@@ -131,62 +139,62 @@ fn build_get_fields_body(map: HashMap<String, String>) -> String {
     result
 }
 
-pub fn generate_types(template_path: &str) {
-    let out_dir = env::var_os("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join("templates.rs");
-    let template_dir = Path::new(template_path);
+// pub fn generate_types(template_path: &str) {
+//     let out_dir = env::var_os("OUT_DIR").unwrap();
+//     let dest_path = Path::new(&out_dir).join("templates.rs");
+//     let template_dir = Path::new(template_path);
 
-    if let Ok(files) = fs::read_dir(template_dir) {
-        let structs: Vec<String> = files
-            .filter_map(Result::ok)
-            .par_bridge()
-            .filter_map(|dir_entry| {
-                let file_path = dir_entry.path();
-                let fmt = FileFormat::from_file(&file_path).ok()?;
+//     if let Ok(files) = fs::read_dir(template_dir) {
+//         let structs: Vec<String> = files
+//             .filter_map(Result::ok)
+//             .par_bridge()
+//             .filter_map(|dir_entry| {
+//                 let file_path = dir_entry.path();
+//                 let fmt = FileFormat::from_file(&file_path).ok()?;
 
-                // if not docx, skip file
-                if fmt.extension() != "docx" {
-                    return None;
-                }
+//                 // if not docx, skip file
+//                 if fmt.extension() != "docx" {
+//                     return None;
+//                 }
 
-                let mut file = File::open(&file_path).ok()?;
-                let mut buf = vec![];
-                let _ = file.read_to_end(&mut buf);
-                let doc = read_docx(&buf).ok()?;
+//                 let mut file = File::open(&file_path).ok()?;
+//                 let mut buf = vec![];
+//                 let _ = file.read_to_end(&mut buf);
+//                 let doc = read_docx(&buf).ok()?;
 
-                let type_name = derive_type_name_from_filename(dir_entry.file_name()).ok()?;
-                let template_variables = get_template_variables_map(&doc);
-                let template_keys = get_template_variable_keys(&template_variables);
-                let fields_string = build_struct_fields(&template_keys);
-                let get_fields_body = build_get_fields_body(template_variables);
+//                 let type_name = derive_type_name_from_filename(dir_entry.file_name()).ok()?;
+//                 let template_variables = get_template_variables_map(&doc);
+//                 let template_keys = get_template_variable_keys(&template_variables);
+//                 let fields_string = build_struct_fields(&template_keys);
+//                 let get_fields_body = build_get_fields_body(template_variables);
 
-                let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
+//                 let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
 
-                formatted_string = formatted_string.replace("{fields}", fields_string.as_str());
-                formatted_string =
-                    formatted_string.replace("{file_name}", file_path.as_path().to_str().unwrap());
-                formatted_string =
-                    formatted_string.replace("{get_fields_body}", get_fields_body.as_str());
+//                 formatted_string = formatted_string.replace("{fields}", fields_string.as_str());
+//                 formatted_string =
+//                     formatted_string.replace("{file_name}", file_path.as_path().to_str().unwrap());
+//                 formatted_string =
+//                     formatted_string.replace("{get_fields_body}", get_fields_body.as_str());
 
-                Some(formatted_string)
-            })
-            .collect();
+//                 Some(formatted_string)
+//             })
+//             .collect();
 
-        let mut generated_types_file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(dest_path)
-            .unwrap();
+//         let mut generated_types_file = OpenOptions::new()
+//             .write(true)
+//             .create(true)
+//             .truncate(true)
+//             .open(dest_path)
+//             .unwrap();
 
-        generated_types_file
-            .write_all(MODULE_PRELUDE.as_bytes())
-            .unwrap();
+//         generated_types_file
+//             .write_all(MODULE_PRELUDE.as_bytes())
+//             .unwrap();
 
-        for s in structs {
-            generated_types_file.write_all(s.as_bytes()).unwrap()
-        }
+//         for s in structs {
+//             generated_types_file.write_all(s.as_bytes()).unwrap()
+//         }
 
-        generated_types_file.write_all("\n}".as_bytes()).unwrap();
-    }
-}
+//         generated_types_file.write_all("\n}".as_bytes()).unwrap();
+//     }
+// }
