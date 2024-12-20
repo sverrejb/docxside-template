@@ -115,14 +115,14 @@ fn build_struct_fields(fields: &Vec<String>) -> String {
     fields_string
 }
 
-fn build_get_fields_body(variables: &Vec<String>) -> String {
-    let mut result = String::from("let mut map = HashMap::new();\n");
+fn build_get_fields_body(map: HashMap<String, String>) -> String {
+    let mut result: String = String::from("let mut map = HashMap::new();\n");
 
-    for variable in variables {
-        let field_name = variable_to_field_name(variable);
-        let row = "map.insert(\"{key}\", &self.{value});\n";
-        let mut modified_row = row.replace("{key}", variable.as_str());
-        modified_row = modified_row.replace("{value}", &field_name.as_str());
+    for variable in map {
+        let field_name = variable_to_field_name(&variable.0);
+        let row = "map.insert(\"{value}\", &self.{replacement});\n";
+        let mut modified_row = row.replace("{value}", variable.1.as_str());
+        modified_row = modified_row.replace("{replacement}", &field_name.as_str());
 
         result.push_str(&modified_row);
     }
@@ -158,7 +158,7 @@ pub fn generate_types(template_path: &str) {
                 let template_variables = get_template_variables_map(&doc);
                 let template_keys = get_template_variable_keys(&template_variables);
                 let fields_string = build_struct_fields(&template_keys);
-                let get_fields_body = build_get_fields_body(&template_keys);
+                let get_fields_body = build_get_fields_body(template_variables);
 
                 let mut formatted_string = TYPE_TEMPLATE.replace("{name}", type_name.as_str());
 
