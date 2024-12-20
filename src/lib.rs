@@ -27,15 +27,17 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             _ => continue,
         }
 
-        let type_name = derive_type_name_from_filename(path);
+        let type_name = match derive_type_name_from_filename(&path) {
+            Ok(name) => name,
+            Err(_) => continue,
+        };
 
-        // Validate that the type name is a valid Rust identifier
-        if !syn::parse_str::<syn::Ident>(type_name).is_ok() {
+        if !syn::parse_str::<syn::Ident>(type_name.as_str()).is_ok() {
             panic!("Invalid type name in file: {}", type_name);
         }
 
-        let content = fs::read_to_string(&path).expect("Failed to read the file");
-        let mut lines = content.lines();
+        let content = fs::read_to_string(path).expect("Failed to read the file");
+        let lines = content.lines();
 
         // The remaining lines are the field names
         let fields: Vec<syn::Ident> = lines
@@ -49,7 +51,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             .collect();
 
         // Generate a struct with the name and fields from the file, and derive Debug
-        let type_ident = syn::Ident::new(type_name, proc_macro::Span::call_site().into());
+        let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
         let expanded = quote! {
             #[derive(Debug)]
             pub struct #type_ident {
