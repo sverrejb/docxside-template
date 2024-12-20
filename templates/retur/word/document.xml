@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
+    xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex"
+    xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:o="urn:schemas-microsoft-com:office:office"
+    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
+    xmlns:v="urn:schemas-microsoft-com:vml"
+    xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing"
+    xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+    xmlns:w10="urn:schemas-microsoft-com:office:word"
+    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"
+    xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"
+    xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex"
+    xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup"
+    xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk"
+    xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml"
+    xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+    mc:Ignorable="w14 w15 w16se wp14">
+    <w:body>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00F16707">
+            <w:pPr>
+                <w:pStyle w:val="Adresse" />
+            </w:pPr>
+            <w:r>
+                <w:fldChar w:fldCharType="begin" />
+            </w:r>
+            <w:r>
+                <w:instrText xml:space="preserve"> DOCPROPERTY "Adressat" \* MERGEFORMAT </w:instrText>
+            </w:r>
+            <w:r>
+                <w:fldChar w:fldCharType="separate" />
+            </w:r>
+            <w:r w:rsidR="00833BA5">
+                <w:t>Adressat</w:t>
+            </w:r>
+            <w:r>
+                <w:fldChar w:fldCharType="end" />
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+            <w:pPr>
+                <w:pStyle w:val="Adresse" />
+            </w:pPr>
+            <w:fldSimple w:instr=" DOCPROPERTY &quot;Postadresse&quot; \* MERGEFORMAT ">
+                <w:r w:rsidR="00833BA5">
+                    <w:t>Postadresse</w:t>
+                </w:r>
+            </w:fldSimple>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+            <w:pPr>
+                <w:pStyle w:val="Adresse" />
+            </w:pPr>
+            <w:fldSimple w:instr=" DOCPROPERTY &quot;Postadresse2&quot; \* MERGEFORMAT ">
+                <w:r w:rsidR="00833BA5">
+                    <w:t>Postadresse2</w:t>
+                </w:r>
+            </w:fldSimple>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+            <w:pPr>
+                <w:pStyle w:val="Adresse" />
+            </w:pPr>
+            <w:r>
+                <w:fldChar w:fldCharType="begin" />
+            </w:r>
+            <w:r>
+                <w:instrText xml:space="preserve"> DOCPROPERTY "PostnummerOgSted" \* MERGEFORMAT </w:instrText>
+            </w:r>
+            <w:r>
+                <w:fldChar w:fldCharType="separate" />
+            </w:r>
+            <w:proofErr w:type="spellStart" />
+            <w:r w:rsidR="00833BA5">
+                <w:t>PostnummerOgSted</w:t>
+            </w:r>
+            <w:proofErr w:type="spellEnd" />
+            <w:r>
+                <w:fldChar w:fldCharType="end" />
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+            <w:pPr>
+                <w:pStyle w:val="Adresse" />
+            </w:pPr>
+            <w:r>
+                <w:fldChar w:fldCharType="begin" />
+            </w:r>
+            <w:r>
+                <w:instrText xml:space="preserve"> DOCPROPERTY "LandUnntattNorge" \* MERGEFORMAT </w:instrText>
+            </w:r>
+            <w:r>
+                <w:fldChar w:fldCharType="separate" />
+            </w:r>
+            <w:proofErr w:type="spellStart" />
+            <w:r w:rsidR="00833BA5">
+                <w:t>LandUnntattNorge</w:t>
+            </w:r>
+            <w:proofErr w:type="spellEnd" />
+            <w:r>
+                <w:fldChar w:fldCharType="end" />
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+            <w:pPr>
+                <w:pStyle w:val="Adresse" />
+            </w:pPr>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+            <w:pPr>
+                <w:pStyle w:val="Adresse" />
+            </w:pPr>
+        </w:p>
+        <w:tbl>
+            <w:tblPr>
+                <w:tblW w:w="0" w:type="auto" />
+                <w:tblLook w:val="0000" w:firstRow="0" w:lastRow="0" w:firstColumn="0"
+                    w:lastColumn="0" w:noHBand="0" w:noVBand="0" />
+            </w:tblPr>
+            <w:tblGrid>
+                <w:gridCol w:w="3095" />
+                <w:gridCol w:w="4081" />
+                <w:gridCol w:w="2110" />
+            </w:tblGrid>
+            <w:tr w:rsidR="00833BA5">
+                <w:trPr>
+                    <w:cantSplit />
+                </w:trPr>
+                <w:tc>
+                    <w:tcPr>
+                        <w:tcW w:w="3095" w:type="dxa" />
+                        <w:tcBorders>
+                            <w:top w:val="nil" />
+                            <w:left w:val="nil" />
+                            <w:bottom w:val="nil" />
+                            <w:right w:val="nil" />
+                        </w:tcBorders>
+                    </w:tcPr>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+                        <w:pPr>
+                            <w:pStyle w:val="ReferanseTittel" />
+                        </w:pPr>
+                    </w:p>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+                        <w:pPr>
+                            <w:pStyle w:val="ReferanseTittel" />
+                        </w:pPr>
+                        <w:r>
+                            <w:t>Deres referanse</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:tcPr>
+                        <w:tcW w:w="4081" w:type="dxa" />
+                        <w:tcBorders>
+                            <w:top w:val="nil" />
+                            <w:left w:val="nil" />
+                            <w:bottom w:val="nil" />
+                            <w:right w:val="nil" />
+                        </w:tcBorders>
+                    </w:tcPr>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+                        <w:pPr>
+                            <w:pStyle w:val="ReferanseTittel" />
+                        </w:pPr>
+                    </w:p>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+                        <w:pPr>
+                            <w:pStyle w:val="ReferanseTittel" />
+                        </w:pPr>
+                        <w:r>
+                            <w:t>Vår referanse</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:tcPr>
+                        <w:tcW w:w="2110" w:type="dxa" />
+                        <w:tcBorders>
+                            <w:top w:val="nil" />
+                            <w:left w:val="nil" />
+                            <w:bottom w:val="nil" />
+                            <w:right w:val="nil" />
+                        </w:tcBorders>
+                    </w:tcPr>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+                        <w:pPr>
+                            <w:pStyle w:val="ReferanseTittel" />
+                        </w:pPr>
+                    </w:p>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+                        <w:pPr>
+                            <w:pStyle w:val="ReferanseTittel" />
+                        </w:pPr>
+                        <w:r>
+                            <w:t>Dato</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+            </w:tr>
+            <w:tr w:rsidR="00833BA5">
+                <w:trPr>
+                    <w:cantSplit />
+                </w:trPr>
+                <w:tc>
+                    <w:tcPr>
+                        <w:tcW w:w="3095" w:type="dxa" />
+                        <w:tcBorders>
+                            <w:top w:val="nil" />
+                            <w:left w:val="nil" />
+                            <w:bottom w:val="nil" />
+                            <w:right w:val="nil" />
+                        </w:tcBorders>
+                    </w:tcPr>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+                        <w:pPr>
+                            <w:pStyle w:val="Referanse" />
+                        </w:pPr>
+                        <w:fldSimple
+                            w:instr=" DOCPROPERTY &quot;DeresReferanse&quot; \* MERGEFORMAT ">
+                            <w:r w:rsidR="00833BA5">
+                                <w:t>DeresReferanse</w:t>
+                            </w:r>
+                        </w:fldSimple>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:tcPr>
+                        <w:tcW w:w="4081" w:type="dxa" />
+                        <w:tcBorders>
+                            <w:top w:val="nil" />
+                            <w:left w:val="nil" />
+                            <w:bottom w:val="nil" />
+                            <w:right w:val="nil" />
+                        </w:tcBorders>
+                    </w:tcPr>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+                        <w:pPr>
+                            <w:pStyle w:val="Referanse" />
+                        </w:pPr>
+                        <w:fldSimple
+                            w:instr=" DOCPROPERTY &quot;VaarReferanse&quot; \* MERGEFORMAT ">
+                            <w:r w:rsidR="00833BA5">
+                                <w:t>VaarReferanse</w:t>
+                            </w:r>
+                        </w:fldSimple>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:tcPr>
+                        <w:tcW w:w="2110" w:type="dxa" />
+                        <w:tcBorders>
+                            <w:top w:val="nil" />
+                            <w:left w:val="nil" />
+                            <w:bottom w:val="nil" />
+                            <w:right w:val="nil" />
+                        </w:tcBorders>
+                        <w:tcMar>
+                            <w:right w:w="28" w:type="dxa" />
+                        </w:tcMar>
+                    </w:tcPr>
+                    <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+                        <w:pPr>
+                            <w:pStyle w:val="Referanse" />
+                        </w:pPr>
+                        <w:fldSimple w:instr=" DOCPROPERTY &quot;BrevDato&quot; \* MERGEFORMAT ">
+                            <w:r w:rsidR="00833BA5">
+                                <w:t>BrevDato</w:t>
+                            </w:r>
+                        </w:fldSimple>
+                    </w:p>
+                </w:tc>
+            </w:tr>
+        </w:tbl>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+            <w:pPr>
+                <w:pStyle w:val="Overskrift1" />
+            </w:pPr>
+            <w:r>
+                <w:t>Retur av sak</w:t>
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00E93411">
+            <w:pPr>
+                <w:pStyle w:val="Sakheading" />
+            </w:pPr>
+            <w:r>
+                <w:rPr>
+                    <w:noProof />
+                </w:rPr>
+                <mc:AlternateContent>
+                    <mc:Choice Requires="wps">
+                        <w:drawing>
+                            <wp:anchor distT="0" distB="0" distL="114300" distR="114300"
+                                simplePos="0" relativeHeight="251658240" behindDoc="0" locked="1"
+                                layoutInCell="1" allowOverlap="1">
+                                <wp:simplePos x="0" y="0" />
+                                <wp:positionH relativeFrom="column">
+                                    <wp:posOffset>-904875</wp:posOffset>
+                                </wp:positionH>
+                                <wp:positionV relativeFrom="paragraph">
+                                    <wp:posOffset>58420</wp:posOffset>
+                                </wp:positionV>
+                                <wp:extent cx="434340" cy="0" />
+                                <wp:effectExtent l="9525" t="10795" r="13335" b="8255" />
+                                <wp:wrapNone />
+                                <wp:docPr id="4" name="Line 4" />
+                                <wp:cNvGraphicFramePr>
+                                    <a:graphicFrameLocks
+                                        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" />
+                                </wp:cNvGraphicFramePr>
+                                <a:graphic
+                                    xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                                    <a:graphicData
+                                        uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                                        <wps:wsp>
+                                            <wps:cNvCnPr>
+                                                <a:cxnSpLocks noChangeShapeType="1" />
+                                            </wps:cNvCnPr>
+                                            <wps:spPr bwMode="auto">
+                                                <a:xfrm flipH="1">
+                                                    <a:off x="0" y="0" />
+                                                    <a:ext cx="434340" cy="0" />
+                                                </a:xfrm>
+                                                <a:prstGeom prst="line">
+                                                    <a:avLst />
+                                                </a:prstGeom>
+                                                <a:noFill />
+                                                <a:ln w="12700">
+                                                    <a:solidFill>
+                                                        <a:srgbClr val="969696" />
+                                                    </a:solidFill>
+                                                    <a:round />
+                                                    <a:headEnd />
+                                                    <a:tailEnd />
+                                                </a:ln>
+                                                <a:extLst>
+                                                    <a:ext
+                                                        uri="{909E8E84-426E-40DD-AFC4-6F175D3DCCD1}">
+                                                        <a14:hiddenFill
+                                                            xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main">
+                                                            <a:noFill />
+                                                        </a14:hiddenFill>
+                                                    </a:ext>
+                                                </a:extLst>
+                                            </wps:spPr>
+                                            <wps:bodyPr />
+                                        </wps:wsp>
+                                    </a:graphicData>
+                                </a:graphic>
+                                <wp14:sizeRelH relativeFrom="page">
+                                    <wp14:pctWidth>0</wp14:pctWidth>
+                                </wp14:sizeRelH>
+                                <wp14:sizeRelV relativeFrom="page">
+                                    <wp14:pctHeight>0</wp14:pctHeight>
+                                </wp14:sizeRelV>
+                            </wp:anchor>
+                        </w:drawing>
+                    </mc:Choice>
+                    <mc:Fallback>
+                        <w:pict>
+                            <v:line w14:anchorId="30264DBB" id="Line 4" o:spid="_x0000_s1026"
+                                style="position:absolute;flip:x;z-index:251658240;visibility:visible;mso-wrap-style:square;mso-width-percent:0;mso-height-percent:0;mso-wrap-distance-left:9pt;mso-wrap-distance-top:0;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:0;mso-position-horizontal:absolute;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text;mso-width-percent:0;mso-height-percent:0;mso-width-relative:page;mso-height-relative:page"
+                                from="-71.25pt,4.6pt" to="-37.05pt,4.6pt"
+                                o:gfxdata="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&#xA;AAAABAAEAPMAAAB9BQAAAAA=&#xA;"
+                                strokecolor="#969696" strokeweight="1pt">
+                                <w10:anchorlock />
+                            </v:line>
+                        </w:pict>
+                    </mc:Fallback>
+                </mc:AlternateContent>
+            </w:r>
+            <w:fldSimple w:instr=" DOCPROPERTY &quot;SakHeading&quot; \* MERGEFORMAT ">
+                <w:r w:rsidR="00833BA5">
+                    <w:t>SakHeading</w:t>
+                </w:r>
+            </w:fldSimple>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+            <w:pPr>
+                <w:pStyle w:val="Brdtekst" />
+            </w:pPr>
+            <w:r>
+                <w:t>Vedlagt oversendes sakens dokumenter</w:t>
+            </w:r>
+            <w:bookmarkStart w:id="0" w:name="_GoBack" />
+            <w:bookmarkEnd w:id="0" />
+            <w:r>
+                <w:t>.</w:t>
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+            <w:pPr>
+                <w:pStyle w:val="Brdtekst" />
+            </w:pPr>
+            <w:r>
+                <w:t>Lagmannsrettens avgjørelse er forkynt for partene. Det er ikke erklært anke mot
+                    avgjørelsen innen utløpet av fristen.</w:t>
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="0089632B" w:rsidRDefault="0089632B">
+            <w:pPr>
+                <w:pStyle w:val="Brdtekst" />
+            </w:pPr>
+            <w:r>
+                <w:t>Saken har vært behandlet elektronisk hos oss. Komplett oversikt over dokumenter
+                    finnes kun i Lovisa.</w:t>
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+            <w:pPr>
+                <w:pStyle w:val="Brdtekst" />
+            </w:pPr>
+            <w:r>
+                <w:t>Avgjørelsen er rettskraftig fra:</w:t>
+            </w:r>
+            <w:r w:rsidR="0089632B" w:rsidRPr="0089632B">
+                <w:rPr>
+                    <w:rFonts w:eastAsia="Times New Roman" />
+                    <w:sz w:val="20" />
+                    <w:szCs w:val="20" />
+                </w:rPr>
+                <w:t xml:space="preserve"> </w:t>
+            </w:r>
+            <w:r w:rsidR="0089632B" w:rsidRPr="0089632B">
+                <w:rPr>
+                    <w:rFonts w:eastAsia="Times New Roman" />
+                    <w:szCs w:val="20" />
+                </w:rPr>
+                <w:fldChar w:fldCharType="begin" />
+            </w:r>
+            <w:r w:rsidR="0089632B" w:rsidRPr="0089632B">
+                <w:rPr>
+                    <w:rFonts w:eastAsia="Times New Roman" />
+                    <w:szCs w:val="20" />
+                </w:rPr>
+                <w:instrText xml:space="preserve"> DOCPROPERTY "SakRettskraftDato"  \* MERGEFORMAT </w:instrText>
+            </w:r>
+            <w:r w:rsidR="0089632B" w:rsidRPr="0089632B">
+                <w:rPr>
+                    <w:rFonts w:eastAsia="Times New Roman" />
+                    <w:szCs w:val="20" />
+                </w:rPr>
+                <w:fldChar w:fldCharType="separate" />
+            </w:r>
+            <w:proofErr w:type="spellStart" />
+            <w:r w:rsidR="0089632B">
+                <w:rPr>
+                    <w:rFonts w:eastAsia="Times New Roman" />
+                    <w:szCs w:val="20" />
+                </w:rPr>
+                <w:t>SakRettskraftDato</w:t>
+            </w:r>
+            <w:proofErr w:type="spellEnd" />
+            <w:r w:rsidR="0089632B" w:rsidRPr="0089632B">
+                <w:rPr>
+                    <w:rFonts w:eastAsia="Times New Roman" />
+                    <w:szCs w:val="20" />
+                </w:rPr>
+                <w:fldChar w:fldCharType="end" />
+            </w:r>
+            <w:r>
+                <w:t>.</w:t>
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+            <w:pPr>
+                <w:pStyle w:val="Brdtekst" />
+            </w:pPr>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+            <w:pPr>
+                <w:pStyle w:val="HilsenEmbete" />
+            </w:pPr>
+            <w:fldSimple w:instr=" DOCPROPERTY &quot;Embete&quot; \* MERGEFORMAT ">
+                <w:r w:rsidR="00833BA5">
+                    <w:t>Embete</w:t>
+                </w:r>
+            </w:fldSimple>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00935BBA">
+            <w:pPr>
+                <w:pStyle w:val="HilsenSaksbehandler" />
+            </w:pPr>
+            <w:fldSimple w:instr=" DOCPROPERTY &quot;User&quot; \* MERGEFORMAT ">
+                <w:r w:rsidR="00833BA5">
+                    <w:t>User</w:t>
+                </w:r>
+            </w:fldSimple>
+            <w:r w:rsidR="00833BA5">
+                <w:br />
+            </w:r>
+            <w:r w:rsidR="00833BA5">
+                <w:rPr>
+                    <w:lang w:val="nn-NO" />
+                </w:rPr>
+                <w:fldChar w:fldCharType="begin" />
+            </w:r>
+            <w:r w:rsidR="00833BA5">
+                <w:rPr>
+                    <w:lang w:val="nn-NO" />
+                </w:rPr>
+                <w:instrText xml:space="preserve"> DOCPROPERTY "UserTitle:lower" \* MERGEFORMAT </w:instrText>
+            </w:r>
+            <w:r w:rsidR="00833BA5">
+                <w:rPr>
+                    <w:lang w:val="nn-NO" />
+                </w:rPr>
+                <w:fldChar w:fldCharType="separate" />
+            </w:r>
+            <w:r w:rsidR="00833BA5">
+                <w:t>UserTitle:lower</w:t>
+            </w:r>
+            <w:r w:rsidR="00833BA5">
+                <w:rPr>
+                    <w:lang w:val="nn-NO" />
+                </w:rPr>
+                <w:fldChar w:fldCharType="end" />
+            </w:r>
+        </w:p>
+        <w:p w:rsidR="00833BA5" w:rsidRDefault="00833BA5">
+            <w:pPr>
+                <w:pStyle w:val="Brdtekst" />
+            </w:pPr>
+        </w:p>
+        <w:sectPr w:rsidR="00833BA5">
+            <w:footerReference w:type="default" r:id="rId6" />
+            <w:headerReference w:type="first" r:id="rId7" />
+            <w:footerReference w:type="first" r:id="rId8" />
+            <w:pgSz w:w="11906" w:h="16838" w:code="9" />
+            <w:pgMar w:top="1418" w:right="1418" w:bottom="1418" w:left="1418" w:header="964"
+                w:footer="284" w:gutter="0" />
+            <w:cols w:space="708" />
+            <w:titlePg />
+            <w:docGrid w:linePitch="360" />
+        </w:sectPr>
+    </w:body>
+</w:document>
