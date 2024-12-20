@@ -1,4 +1,4 @@
-mod proc;
+use docxside_templates::generate_templates;
 
 generate_templates!("test");
 
