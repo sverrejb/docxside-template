@@ -1,3 +1,2 @@
-Test4
 foo
 bar

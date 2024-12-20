@@ -1,3 +1,2 @@
-Test6
 foo
 bar
