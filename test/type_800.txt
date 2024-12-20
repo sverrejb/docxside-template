@@ -1,3 +1,0 @@
-Test800
-foo
-bar
