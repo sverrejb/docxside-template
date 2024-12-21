@@ -5,7 +5,6 @@ use foo::derive_type_name_from_filename;
 use proc_macro::TokenStream;
 use quote::quote;
 use std::fs;
-use syn;
 
 #[proc_macro]
 pub fn generate_templates(input: TokenStream) -> TokenStream {
@@ -18,12 +17,16 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
     for path in paths {
         let path = path.expect("Failed to read path").path();
+        //todo: maybe recursive traversal?
         if !path.is_file() {
             continue;
         }
         match path.extension() {
             Some(ext) if ext == "txt" => {}
-            None => continue,
+            None => {
+                println! {"DHADHDHDDAHDAH"};
+                continue;
+            }
             _ => continue,
         }
 
@@ -32,8 +35,9 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             Err(_) => continue,
         };
 
-        if !syn::parse_str::<syn::Ident>(type_name.as_str()).is_ok() {
-            panic!("Invalid type name in file: {}", type_name);
+        //Todo move validation to derive-function
+        if syn::parse_str::<syn::Ident>(type_name.as_str()).is_err() {
+            panic!("Invalid type for file: {}", type_name);
         }
 
         let content = fs::read_to_string(path).expect("Failed to read the file");
@@ -43,7 +47,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         let fields: Vec<syn::Ident> = lines
             .map(|line| {
                 let field_name = line.trim();
-                if !syn::parse_str::<syn::Ident>(field_name).is_ok() {
+                if syn::parse_str::<syn::Ident>(field_name).is_err() {
                     panic!("Invalid field name in file: {}", field_name);
                 }
                 syn::Ident::new(field_name, proc_macro::Span::call_site().into())

@@ -1,17 +1,5 @@
-use docx_rs::read_docx;
-use docx_rs::Docx;
-use file_format::FileFormat;
-use heck::{AsPascalCase, AsSnakeCase, ToPascalCase};
-use rayon::iter::{ParallelBridge, ParallelIterator};
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::{
-    env,
-    ffi::OsString,
-    fs::{self, File, OpenOptions},
-    io::{Read, Write},
-    path::Path,
-};
+use heck::ToPascalCase;
+use std::path::Path;
 
 // const MODULE_PRELUDE: &str = "
 // pub mod templates {
@@ -85,7 +73,7 @@ use std::{
 //     }
 // }
 
-pub fn derive_type_name_from_filename(filename: &PathBuf) -> Result<String, String> {
+pub fn derive_type_name_from_filename(filename: &Path) -> Result<String, String> {
     // Extract the file stem (filename without extension)
     let file_stem = filename
         .file_stem()
