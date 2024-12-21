@@ -1,4 +1,4 @@
-use heck::ToPascalCase;
+use heck::{AsPascalCase, AsSnakeCase, ToPascalCase};
 use std::path::Path;
 
 // const MODULE_PRELUDE: &str = "
@@ -38,13 +38,13 @@ use std::path::Path;
 //     }
 // }
 
-// pub fn variable_to_field_name(variable: &String) -> String {
-//     let mut field_name = variable.replace(" ", "_");
-//     //TODO: handle all illegal characters
-//     field_name = field_name.replace(":", "_");
-//     field_name = format!("{}", AsSnakeCase(field_name));
-//     field_name
-// }
+pub fn placeholder_to_field_name(variable: &String) -> String {
+    let mut field_name = variable.replace(" ", "_");
+    //TODO: handle all illegal characters
+    field_name = field_name.replace(":", "_");
+    field_name = format!("{}", AsSnakeCase(field_name));
+    field_name
+}
 
 // pub trait Filename {
 //     fn get_filename(&self) -> String;
