@@ -24,7 +24,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         match path.extension() {
             Some(ext) if ext == "txt" => {}
             None => {
-                println! {"DHADHDHDDAHDAH"};
+                println! {"Note: file {} is missing filetype extension.", path.display()};
                 continue;
             }
             _ => continue,
