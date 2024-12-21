@@ -1,10 +1,34 @@
 extern crate proc_macro;
 mod foo;
 
-use foo::derive_type_name_from_filename;
+use docx_rs::{read_docx, DocumentChild::Paragraph};
+use file_format::FileFormat;
+use foo::{derive_type_name_from_filename, placeholder_to_field_name};
 use proc_macro::TokenStream;
 use quote::quote;
-use std::fs;
+use regex::Regex;
+use std::{
+    fs::{self, File},
+    io::Read,
+    path::PathBuf,
+};
+use syn::parse_str;
+
+fn print_message(message: &str, path: &PathBuf) {
+    println!("\x1b[34m[Docxside-template]\x1b[0m {} {:?}", message, path);
+}
+
+fn is_valid_docx_file(path: &PathBuf) -> bool {
+    if !path.is_file() {
+        return false;
+    }
+
+    match FileFormat::from_file(&path) {
+        Ok(fmt) if fmt.extension() == "docx" => return true,
+        Ok(_) => return false,
+        Err(_) => return false,
+    }
+}
 
 #[proc_macro]
 pub fn generate_templates(input: TokenStream) -> TokenStream {
@@ -16,61 +40,101 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
     let mut structs = Vec::new();
 
     for path in paths {
-        let path = path.expect("Failed to read path").path();
         //todo: maybe recursive traversal?
-        if !path.is_file() {
+        let path = path.expect("Failed to read path").path();
+
+        if !is_valid_docx_file(&path) {
+            print_message("Invalid template file, skipping.", &path);
             continue;
-        }
-        match path.extension() {
-            Some(ext) if ext == "txt" => {}
-            None => {
-                println! {"Note: file {} is missing filetype extension.", path.display()};
-                continue;
-            }
-            _ => continue,
         }
 
         let type_name = match derive_type_name_from_filename(&path) {
-            Ok(name) => name,
-            Err(_) => continue,
+            Ok(name) if parse_str::<syn::Ident>(&name).is_ok() => name,
+            _ => {
+                print_message(
+                    "Unable to derive type name from file name, skipping:",
+                    &path,
+                );
+
+                continue;
+            }
         };
 
-        //Todo move validation to derive-function
-        if syn::parse_str::<syn::Ident>(type_name.as_str()).is_err() {
-            panic!("Invalid type for file: {}", type_name);
+        let mut file = match File::open(&path) {
+            Ok(file) => file,
+            Err(_) => {
+                continue;
+            }
+        };
+
+        let mut buf = vec![];
+
+        if let Err(_) = file.read_to_end(&mut buf) {
+            print_message("Unable to read file content. Skipping.", &path);
+            continue;
         }
 
-        let content = fs::read_to_string(path).expect("Failed to read the file");
-        let lines = content.lines();
+        let doc = match read_docx(&buf) {
+            Ok(doc) => doc,
+            Err(_) => {
+                print_message("Unable to read docx content. Skipping.", &path);
+                continue;
+            }
+        };
+        let content = doc.document.children;
 
-        // The remaining lines are the field names
-        let fields: Vec<syn::Ident> = lines
-            .map(|line| {
-                let field_name = line.trim();
-                if syn::parse_str::<syn::Ident>(field_name).is_err() {
-                    panic!("Invalid field name in file: {}", field_name);
+        let mut corpus: Vec<String> = vec![];
+
+        for child in content {
+            match child {
+                Paragraph(paragraph) => corpus.push(paragraph.raw_text()),
+                _ => {}
+            }
+        }
+
+        let re = Regex::new(r"\{([^}]+)\}").unwrap();
+        let mut fields = Vec::new();
+
+        for text in corpus {
+            for cap in re.captures_iter(&text) {
+                let placeholder = cap[1].trim().to_string();
+                let field_name = placeholder_to_field_name(&placeholder);
+                if syn::parse_str::<syn::Ident>(&field_name).is_ok() {
+                    fields.push(syn::Ident::new(
+                        &field_name,
+                        proc_macro::Span::call_site().into(),
+                    ));
+                } else {
+                    println!(
+                        "\x1b[34m[Docxside-template]\x1b[0m Invalid placeholder name in file: {}",
+                        placeholder
+                    );
                 }
-                syn::Ident::new(field_name, proc_macro::Span::call_site().into())
-            })
-            .collect();
+            }
+        }
 
-        // Generate a struct with the name and fields from the file, and derive Debug
         let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
         let expanded = quote! {
             #[derive(Debug)]
-            pub struct #type_ident {
-                #(pub #fields: String,)*
+            pub struct #type_ident<'a> {
+                #(pub #fields: &'a str,)*
+            }
+
+            impl<'a> #type_ident<'a> {
+                pub fn new(#(#fields: &'a str),*) -> Self {
+                    Self {
+                        #(#fields),*
+                    }
+                }
             }
         };
 
         structs.push(expanded);
     }
 
-    // Combine all generated structs into a single TokenStream
     let combined = quote! {
         #(#structs)*
     };
 
-    // Return the generated code as a TokenStream
     combined.into()
 }
