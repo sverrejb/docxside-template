@@ -8,7 +8,9 @@ fn main() {
         test: "hehe".into(),
         big_test: "lol".into(),
         subject: "nah",
+        fat_bat: "snaxk",
     };
 
     println!("{:?}", instance);
+    println!("{:?}", instance.get_file_path())
 }

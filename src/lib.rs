@@ -52,7 +52,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             Ok(name) if parse_str::<syn::Ident>(&name).is_ok() => name,
             _ => {
                 print_message(
-                    "Unable to derive type name from file name, skipping:",
+                    "Unable to derive type name from file name. skipping.",
                     &path,
                 );
 
@@ -114,6 +114,8 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         }
 
         let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
+        let path_str = path.to_str().expect("Failed to convert path to string");
+
         let expanded = quote! {
             #[derive(Debug)]
             pub struct #type_ident<'a> {
@@ -125,6 +127,10 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                     Self {
                         #(#fields),*
                     }
+                }
+
+                fn get_file_path(&self) -> &'static std::path::Path {
+                    std::path::Path::new(#path_str)
                 }
             }
         };
