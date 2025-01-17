@@ -1,18 +1,21 @@
 extern crate proc_macro;
-mod foo;
+mod templates;
 
 use docx_rs::{read_docx, DocumentChild::Paragraph};
 use file_format::FileFormat;
-use foo::{derive_type_name_from_filename, placeholder_to_field_name};
 use proc_macro::TokenStream;
 use quote::quote;
 use regex::Regex;
 use std::{
+    collections::HashMap,
     fs::{self, File},
     io::Read,
+    iter::Map,
     path::PathBuf,
 };
+
 use syn::parse_str;
+use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 
 fn print_message(message: &str, path: &PathBuf) {
     println!("\x1b[34m[Docxside-template]\x1b[0m {} {:?}", message, path);
@@ -94,6 +97,9 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
         let re = Regex::new(r"\{([^}]+)\}").unwrap();
         let mut fields = Vec::new();
+        //let mut placeholder_field_map = HashMap::new();
+        let mut field_names = Vec::new();
+        let mut placeholders = Vec::new();
 
         for text in corpus {
             for cap in re.captures_iter(&text) {
@@ -104,6 +110,11 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                         &field_name,
                         proc_macro::Span::call_site().into(),
                     ));
+                    //placeholder_field_map.insert(field_name, placeholder);
+                    let x = syn::LitStr::new(&field_name, proc_macro::Span::call_site().into());
+                    let y = syn::LitStr::new(&placeholder, proc_macro::Span::call_site().into());
+                    field_names.push(x);
+                    placeholders.push(y);
                 } else {
                     println!(
                         "\x1b[34m[Docxside-template]\x1b[0m Invalid placeholder name in file: {}",
@@ -132,10 +143,31 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                 fn get_file_path(&self) -> &'static std::path::Path {
                     std::path::Path::new(#path_str)
                 }
+
+                pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
+                    use std::io::Write;
+                    let file_path = path.as_ref();
+                    let mut file = std::fs::File::create(file_path)?;
+
+                    let mut contents = std::fs::read_to_string("test.txt").expect("Should have been able to read the file");
+
+                    #(
+                        println!("Key: {}, Value: {}", #field_names, #placeholders);
+                    )*
+
+                    //#(println!("Value: {} Placeholder: {}", self.#fields, placeholder_field_map.get(stringify!("name")).unwrap_or(&""));)*
+
+
+
+
+                    file.write_all(b"Save logic here")?;
+                    Ok(())
+                }
             }
+
         };
 
-        structs.push(expanded);
+        structs.push(expanded)
     }
 
     let combined = quote! {
