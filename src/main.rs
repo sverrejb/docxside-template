@@ -7,7 +7,7 @@ fn main() {
         name: "Sverre".into(),
         test: "hehe".into(),
         big_test: "lol".into(),
-        subject: "nah",
+        subject: "Beefs",
         fat_bat: "snaxk",
     };
 
