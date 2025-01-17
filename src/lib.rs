@@ -7,10 +7,8 @@ use proc_macro::TokenStream;
 use quote::quote;
 use regex::Regex;
 use std::{
-    collections::HashMap,
     fs::{self, File},
     io::Read,
-    iter::Map,
     path::PathBuf,
 };
 
@@ -95,22 +93,22 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             }
         }
 
-        let re = Regex::new(r"\{([^}]+)\}").unwrap();
+        let re = Regex::new(r"(\{\s*[^}]+\s*\})").unwrap();
         let mut fields = Vec::new();
-        //let mut placeholder_field_map = HashMap::new();
         let mut field_names = Vec::new();
         let mut placeholders = Vec::new();
 
         for text in corpus {
             for cap in re.captures_iter(&text) {
-                let placeholder = cap[1].trim().to_string();
-                let field_name = placeholder_to_field_name(&placeholder);
+                let placeholder = cap[1].to_string();
+                let cleaned_placeholder: &str =
+                    placeholder.trim_matches(|c: char| c == '{' || c == '}' || c.is_whitespace());
+                let field_name = placeholder_to_field_name(&cleaned_placeholder.to_string());
                 if syn::parse_str::<syn::Ident>(&field_name).is_ok() {
                     fields.push(syn::Ident::new(
                         &field_name,
                         proc_macro::Span::call_site().into(),
                     ));
-                    //placeholder_field_map.insert(field_name, placeholder);
                     let x = syn::LitStr::new(&field_name, proc_macro::Span::call_site().into());
                     let y = syn::LitStr::new(&placeholder, proc_macro::Span::call_site().into());
                     field_names.push(x);
@@ -152,15 +150,12 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                     let mut contents = std::fs::read_to_string("test.txt").expect("Should have been able to read the file");
 
                     #(
-                        println!("Key: {}, Value: {}", #field_names, #placeholders);
+                        println!("Value: {}, Placeholder: {}", self.#fields, #placeholders);
+                        contents = contents.replace(#placeholders, self.#fields);
                     )*
 
-                    //#(println!("Value: {} Placeholder: {}", self.#fields, placeholder_field_map.get(stringify!("name")).unwrap_or(&""));)*
 
-
-
-
-                    file.write_all(b"Save logic here")?;
+                    file.write_all(contents.as_bytes())?;
                     Ok(())
                 }
             }
