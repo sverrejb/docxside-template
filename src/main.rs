@@ -12,5 +12,6 @@ fn main() {
     };
 
     println!("{:?}", instance);
-    println!("{:?}", instance.get_file_path())
+    println!("{:?}", instance.get_file_path());
+    let _ = instance.save("path.txt");
 }

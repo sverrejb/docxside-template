@@ -1,4 +1,4 @@
-use heck::{AsPascalCase, AsSnakeCase, ToPascalCase};
+use heck::{AsSnakeCase, ToPascalCase};
 use std::path::Path;
 
 // const MODULE_PRELUDE: &str = "
@@ -46,13 +46,10 @@ pub fn placeholder_to_field_name(variable: &String) -> String {
     field_name
 }
 
+
 // pub trait Filename {
 //     fn get_filename(&self) -> String;
 //     fn get_fields(&self) -> HashMap<&str, &String>;
-// }
-
-// pub trait Save {
-//     fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>>;
 // }
 
 // impl<T: Filename> Save for T {
