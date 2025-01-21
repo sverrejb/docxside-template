@@ -39,6 +39,15 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
     let paths = fs::read_dir(folder_path).expect("Failed to read the folder");
 
     let mut structs = Vec::new();
+    let mut fns = Vec::new();
+
+    let foo = quote! {
+        fn test_fn () {
+            println!("FOO");
+        }
+    };
+
+    fns.push(foo);
 
     for path in paths {
         //todo: maybe recursive traversal?
@@ -167,6 +176,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
     let combined = quote! {
         #(#structs)*
+        #(#fns)*
     };
 
     combined.into()

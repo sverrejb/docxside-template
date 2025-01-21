@@ -13,5 +13,10 @@ fn main() {
 
     println!("{:?}", instance);
     println!("{:?}", instance.get_file_path());
-    let _ = instance.save("path.txt");
+    match instance.save("./foo/out.txt") {
+        Ok(_) => println!("SAVED"),
+        Err(err) => println!("FAILED: {}", err),
+    }
+
+    test_fn();
 }
