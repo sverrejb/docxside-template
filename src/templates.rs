@@ -46,7 +46,6 @@ pub fn placeholder_to_field_name(variable: &String) -> String {
     field_name
 }
 
-
 // pub trait Filename {
 //     fn get_filename(&self) -> String;
 //     fn get_fields(&self) -> HashMap<&str, &String>;
