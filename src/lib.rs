@@ -153,18 +153,23 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
                 pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
                     use std::io::Write;
-                    let file_path = path.as_ref();
-                    let mut file = std::fs::File::create(file_path)?;
+                    let template_path = self.get_file_path();
+                    let template_copy_path = path.as_ref().with_extension("docx");
 
-                    let mut contents = std::fs::read_to_string("test.txt").expect("Should have been able to read the file");
+                    // Open the template .docx file as a zip archive
+                    let template_file = std::fs::File::open(template_path)?;
+                    let mut archive = zip::read::ZipArchive::new(template_file)?;
 
+
+                    //FOR DEBUG PURPOSES
                     #(
                         println!("Value: {}, Placeholder: {}", self.#fields, #placeholders);
-                        contents = contents.replace(#placeholders, self.#fields);
                     )*
 
+                    // Copy the template file
+                    std::fs::copy(template_path, template_copy_path)?;
 
-                    file.write_all(contents.as_bytes())?;
+
                     Ok(())
                 }
             }
