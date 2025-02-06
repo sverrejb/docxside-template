@@ -13,7 +13,8 @@ fn main() {
 
     println!("{:?}", instance);
     println!("{:?}", instance.get_file_path());
-    match instance.save("./foo/out.txt") {
+
+    match instance.save("./foo/out.docx") {
         Ok(_) => println!("SAVED"),
         Err(err) => println!("FAILED: {}", err),
     }
