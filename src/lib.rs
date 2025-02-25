@@ -160,6 +160,12 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                     let template_file = std::fs::File::open(template_path)?;
                     let mut archive = zip::read::ZipArchive::new(template_file)?;
 
+                    // Create a new zip archive for the output .docx file
+                    //let output_file = std::fs::File::create(template_copy_path)?;
+                    //let mut zip_writer = zip::write::ZipWriter::new(output_file);
+                    std::fs::copy(template_path, template_copy_path)?;
+
+
 
                     //FOR DEBUG PURPOSES
                     #(
@@ -167,7 +173,6 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                     )*
 
                     // Copy the template file
-                    std::fs::copy(template_path, template_copy_path)?;
 
 
                     Ok(())
