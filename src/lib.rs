@@ -13,23 +13,87 @@ use std::{
     path::PathBuf,
 };
 
-use syn::{parse_str, Lit, LitStr};
+use syn::{parse_str, LitStr};
 use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 
-fn print_docxside_message(message: &str, path: &PathBuf) {
-    println!("\x1b[34m[Docxside-template]\x1b[0m {} {:?}", message, path);
-}
+#[proc_macro]
+pub fn generate_templates(input: TokenStream) -> TokenStream {
+    let input_string = input.to_string();
+    let folder_path = input_string.trim_matches('"');
 
-fn is_valid_docx_file(path: &PathBuf) -> bool {
-    if !path.is_file() {
-        return false;
+    let paths = fs::read_dir(folder_path).expect("Failed to read the folder");
+    let mut structs = Vec::new();
+
+    for path in paths {
+        //todo: maybe recursive traversal?
+        let path = path.expect("Failed to read path").path();
+
+        // TOOD: Move all validation into function
+        if !is_valid_docx_file(&path) {
+            print_docxside_message("Invalid template file, skipping.", &path);
+            continue;
+        }
+
+        let type_name = match derive_type_name_from_filename(&path) {
+            Ok(name) if parse_str::<syn::Ident>(&name).is_ok() => name,
+            _ => {
+                print_docxside_message(
+                    "Unable to derive type name from file name. skipping.",
+                    &path,
+                );
+                continue;
+            }
+        };
+        let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
+
+        let mut file = match File::open(&path) {
+            Ok(file) => file,
+            Err(_) => {
+                continue;
+            }
+        };
+
+        let mut buf = vec![];
+
+        if let Err(_) = file.read_to_end(&mut buf) {
+            print_docxside_message("Unable to read file content. Skipping.", &path);
+            continue;
+        }
+
+        let doc = match read_docx(&buf) {
+            Ok(doc) => doc,
+            Err(_) => {
+                print_docxside_message("Unable to read docx content. Skipping.", &path);
+                continue;
+            }
+        };
+
+        let content = doc.document.children;
+        let mut corpus: Vec<String> = vec![];
+
+        for child in content {
+            match child {
+                Paragraph(paragraph) => corpus.push(paragraph.raw_text()),
+                _ => {}
+            }
+        }
+
+        let struct_content = generate_struct_content(corpus);
+        let path_str = path.to_str().expect("Failed to convert path to string");
+
+        let fields = struct_content.fields;
+        let placeholders = struct_content.placeholders;
+
+        let template_struct = generate_struct(type_ident, path_str, &fields, &placeholders);
+
+        structs.push(template_struct)
     }
 
-    match FileFormat::from_file(&path) {
-        Ok(fmt) if fmt.extension() == "docx" => return true,
-        Ok(_) => return false,
-        Err(_) => return false,
-    }
+    let combined = quote! {
+        #(#structs)*
+    };
+
+    combined.into()
 }
 
 fn generate_struct(
@@ -152,81 +216,18 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
     }
 }
 
-#[proc_macro]
-pub fn generate_templates(input: TokenStream) -> TokenStream {
-    let input_string = input.to_string();
-    let folder_path = input_string.trim_matches('"');
+fn print_docxside_message(message: &str, path: &PathBuf) {
+    println!("\x1b[34m[Docxside-template]\x1b[0m {} {:?}", message, path);
+}
 
-    let paths = fs::read_dir(folder_path).expect("Failed to read the folder");
-    let mut structs = Vec::new();
-
-    for path in paths {
-        //todo: maybe recursive traversal?
-        let path = path.expect("Failed to read path").path();
-
-        if !is_valid_docx_file(&path) {
-            print_docxside_message("Invalid template file, skipping.", &path);
-            continue;
-        }
-
-        let type_name = match derive_type_name_from_filename(&path) {
-            Ok(name) if parse_str::<syn::Ident>(&name).is_ok() => name,
-            _ => {
-                print_docxside_message(
-                    "Unable to derive type name from file name. skipping.",
-                    &path,
-                );
-                continue;
-            }
-        };
-        let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
-
-        let mut file = match File::open(&path) {
-            Ok(file) => file,
-            Err(_) => {
-                continue;
-            }
-        };
-
-        let mut buf = vec![];
-
-        if let Err(_) = file.read_to_end(&mut buf) {
-            print_docxside_message("Unable to read file content. Skipping.", &path);
-            continue;
-        }
-
-        let doc = match read_docx(&buf) {
-            Ok(doc) => doc,
-            Err(_) => {
-                print_docxside_message("Unable to read docx content. Skipping.", &path);
-                continue;
-            }
-        };
-
-        let content = doc.document.children;
-        let mut corpus: Vec<String> = vec![];
-
-        for child in content {
-            match child {
-                Paragraph(paragraph) => corpus.push(paragraph.raw_text()),
-                _ => {}
-            }
-        }
-
-        let struct_content = generate_struct_content(corpus);
-        let path_str = path.to_str().expect("Failed to convert path to string");
-
-        let fields = struct_content.fields;
-        let placeholders = struct_content.placeholders;
-
-        let template_struct = generate_struct(type_ident, path_str, &fields, &placeholders);
-
-        structs.push(template_struct)
+fn is_valid_docx_file(path: &PathBuf) -> bool {
+    if !path.is_file() {
+        return false;
     }
 
-    let combined = quote! {
-        #(#structs)*
-    };
-
-    combined.into()
+    match FileFormat::from_file(&path) {
+        Ok(fmt) if fmt.extension() == "docx" => return true,
+        Ok(_) => return false,
+        Err(_) => return false,
+    }
 }
