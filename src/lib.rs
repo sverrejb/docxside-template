@@ -117,17 +117,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
     let folder_path = input_string.trim_matches('"');
 
     let paths = fs::read_dir(folder_path).expect("Failed to read the folder");
-
     let mut structs = Vec::new();
-    let mut fns = Vec::new();
-
-    let foo = quote! {
-        fn test_fn () {
-            println!("FOO");
-        }
-    };
-
-    fns.push(foo);
 
     for path in paths {
         //todo: maybe recursive traversal?
@@ -145,7 +135,6 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                     "Unable to derive type name from file name. skipping.",
                     &path,
                 );
-
                 continue;
             }
         };
@@ -214,14 +203,13 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
         let path_str = path.to_str().expect("Failed to convert path to string");
 
-        let expanded = generate_struct(type_ident, path_str, &fields, &placeholders);
+        let template_struct = generate_struct(type_ident, path_str, &fields, &placeholders);
 
-        structs.push(expanded)
+        structs.push(template_struct)
     }
 
     let combined = quote! {
         #(#structs)*
-        #(#fns)*
     };
 
     combined.into()
