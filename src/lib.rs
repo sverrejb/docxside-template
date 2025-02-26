@@ -4,6 +4,7 @@ mod templates;
 use docx_rs::{read_docx, DocumentChild::Paragraph};
 use file_format::FileFormat;
 use proc_macro::TokenStream;
+use proc_macro2;
 use quote::quote;
 use regex::Regex;
 use std::{
@@ -29,6 +30,85 @@ fn is_valid_docx_file(path: &PathBuf) -> bool {
         Ok(_) => return false,
         Err(_) => return false,
     }
+}
+
+fn generate_struct(
+    type_ident: syn::Ident,
+    path_str: &str,
+    fields: &[syn::Ident],
+    placeholders: &[syn::LitStr],
+) -> proc_macro2::TokenStream {
+    let tokens = quote! {
+        #[derive(Debug)]
+            pub struct #type_ident<'a> {
+                #(pub #fields: &'a str,)*
+            }
+
+            impl<'a> #type_ident<'a> {
+                pub fn new(#(#fields: &'a str),*) -> Self {
+                    Self {
+                        #(#fields),*
+                    }
+                }
+
+                fn get_file_path(&self) -> &'static std::path::Path {
+                    std::path::Path::new(#path_str)
+                }
+
+                pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
+                    use std::io::Write;
+                    let template_path = self.get_file_path();
+                    let template_copy_path = path.as_ref().with_extension("docx");
+
+                    // Open the template .docx file as a zip archive
+                    let template_file = std::fs::File::open(template_path)?;
+                    let mut archive = zip::read::ZipArchive::new(template_file)?;
+
+                    // Create a new zip archive for the output .docx file
+                    let output_file = std::fs::File::create(template_copy_path)?;
+                    let mut zip_writer = zip::write::ZipWriter::new(output_file);
+
+                     // Iterate through the files in the template archive
+
+                    for i in 0..archive.len() {
+                        let mut file = archive.by_index(i)?;
+                        let file_name: String = file.name().to_string();
+
+                        // Read the file contents
+                        let mut contents = Vec::new();
+                        std::io::Read::read_to_end(&mut file, &mut contents)?;
+
+                        // If the file is an XML file, replace placeholders
+                        if file_name.ends_with(".xml") {
+                            let mut contents_str = String::from_utf8(contents)?;
+                            #(
+                                contents_str = contents_str.replace(#placeholders, self.#fields);
+                            )*
+                            contents = contents_str.into_bytes();
+                        }
+
+                        // Write the file to the output archive
+                        //let file_options: zip::write::FileOptions = zip::write::ExtendedFileOptions::default().into();
+                        //zip_writer.start_file(file_name, file_options)?;
+                        //zip_writer.write_all(&contents)?;
+                    }
+
+
+                    //FOR DEBUG PURPOSES
+                    #(
+                        println!("Value: {}, Placeholder: {}", self.#fields, #placeholders);
+                    )*
+
+                    // Copy the template file
+                    //std::fs::copy(template_path, template_copy_path)?;
+
+
+                    Ok(())
+                }
+            }
+    };
+
+    tokens
 }
 
 #[proc_macro]
@@ -134,52 +214,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
         let path_str = path.to_str().expect("Failed to convert path to string");
 
-        let expanded = quote! {
-            #[derive(Debug)]
-            pub struct #type_ident<'a> {
-                #(pub #fields: &'a str,)*
-            }
-
-            impl<'a> #type_ident<'a> {
-                pub fn new(#(#fields: &'a str),*) -> Self {
-                    Self {
-                        #(#fields),*
-                    }
-                }
-
-                fn get_file_path(&self) -> &'static std::path::Path {
-                    std::path::Path::new(#path_str)
-                }
-
-                pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
-                    use std::io::Write;
-                    let template_path = self.get_file_path();
-                    let template_copy_path = path.as_ref().with_extension("docx");
-
-                    // Open the template .docx file as a zip archive
-                    let template_file = std::fs::File::open(template_path)?;
-                    let mut archive = zip::read::ZipArchive::new(template_file)?;
-
-                    // Create a new zip archive for the output .docx file
-                    //let output_file = std::fs::File::create(template_copy_path)?;
-                    //let mut zip_writer = zip::write::ZipWriter::new(output_file);
-                    std::fs::copy(template_path, template_copy_path)?;
-
-
-
-                    //FOR DEBUG PURPOSES
-                    #(
-                        println!("Value: {}, Placeholder: {}", self.#fields, #placeholders);
-                    )*
-
-                    // Copy the template file
-
-
-                    Ok(())
-                }
-            }
-
-        };
+        let expanded = generate_struct(type_ident, path_str, &fields, &placeholders);
 
         structs.push(expanded)
     }

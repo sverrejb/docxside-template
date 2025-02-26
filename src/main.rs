@@ -14,10 +14,9 @@ fn main() {
     println!("{:?}", instance);
     println!("{:?}", instance.get_file_path());
 
-    match instance.save("./foo/dorp.docx") {
+    match instance.save("./foo/testfest.docx") {
         Ok(_) => println!("SAVED"),
         Err(err) => println!("FAILED: {}", err),
     }
 
-    test_fn();
 }
