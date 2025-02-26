@@ -13,10 +13,10 @@ use std::{
     path::PathBuf,
 };
 
-use syn::parse_str;
+use syn::{parse_str, Lit, LitStr};
 use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 
-fn print_message(message: &str, path: &PathBuf) {
+fn print_docxside_message(message: &str, path: &PathBuf) {
     println!("\x1b[34m[Docxside-template]\x1b[0m {} {:?}", message, path);
 }
 
@@ -38,7 +38,7 @@ fn generate_struct(
     fields: &[syn::Ident],
     placeholders: &[syn::LitStr],
 ) -> proc_macro2::TokenStream {
-    let tokens = quote! {
+    quote! {
         #[derive(Debug)]
             pub struct #type_ident<'a> {
                 #(pub #fields: &'a str,)*
@@ -106,9 +106,50 @@ fn generate_struct(
                     Ok(())
                 }
             }
-    };
+    }
+}
 
-    tokens
+struct StructContent {
+    fields: Vec<proc_macro2::Ident>,
+    field_names: Vec<LitStr>,
+    placeholders: Vec<LitStr>,
+}
+
+fn generate_struct_content(corpus: Vec<String>) -> StructContent {
+    let re = Regex::new(r"(\{\s*[^}]+\s*\})").unwrap();
+    let mut fields = Vec::new();
+    let mut field_names = Vec::new();
+    let mut placeholders = Vec::new();
+
+    for text in corpus {
+        for cap in re.captures_iter(&text) {
+            let placeholder = cap[1].to_string();
+            let cleaned_placeholder: &str =
+                placeholder.trim_matches(|c: char| c == '{' || c == '}' || c.is_whitespace());
+            let field_name = placeholder_to_field_name(&cleaned_placeholder.to_string());
+            if syn::parse_str::<syn::Ident>(&field_name).is_ok() {
+                fields.push(syn::Ident::new(
+                    &field_name,
+                    proc_macro::Span::call_site().into(),
+                ));
+                let x = syn::LitStr::new(&field_name, proc_macro::Span::call_site().into());
+                let y = syn::LitStr::new(&placeholder, proc_macro::Span::call_site().into());
+                field_names.push(x);
+                placeholders.push(y);
+            } else {
+                println!(
+                    "\x1b[34m[Docxside-template]\x1b[0m Invalid placeholder name in file: {}",
+                    placeholder
+                );
+            }
+        }
+    }
+
+    StructContent {
+        fields,
+        field_names,
+        placeholders,
+    }
 }
 
 #[proc_macro]
@@ -124,20 +165,21 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         let path = path.expect("Failed to read path").path();
 
         if !is_valid_docx_file(&path) {
-            print_message("Invalid template file, skipping.", &path);
+            print_docxside_message("Invalid template file, skipping.", &path);
             continue;
         }
 
         let type_name = match derive_type_name_from_filename(&path) {
             Ok(name) if parse_str::<syn::Ident>(&name).is_ok() => name,
             _ => {
-                print_message(
+                print_docxside_message(
                     "Unable to derive type name from file name. skipping.",
                     &path,
                 );
                 continue;
             }
         };
+        let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
 
         let mut file = match File::open(&path) {
             Ok(file) => file,
@@ -149,19 +191,19 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         let mut buf = vec![];
 
         if let Err(_) = file.read_to_end(&mut buf) {
-            print_message("Unable to read file content. Skipping.", &path);
+            print_docxside_message("Unable to read file content. Skipping.", &path);
             continue;
         }
 
         let doc = match read_docx(&buf) {
             Ok(doc) => doc,
             Err(_) => {
-                print_message("Unable to read docx content. Skipping.", &path);
+                print_docxside_message("Unable to read docx content. Skipping.", &path);
                 continue;
             }
         };
-        let content = doc.document.children;
 
+        let content = doc.document.children;
         let mut corpus: Vec<String> = vec![];
 
         for child in content {
@@ -171,37 +213,11 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             }
         }
 
-        let re = Regex::new(r"(\{\s*[^}]+\s*\})").unwrap();
-        let mut fields = Vec::new();
-        let mut field_names = Vec::new();
-        let mut placeholders = Vec::new();
-
-        for text in corpus {
-            for cap in re.captures_iter(&text) {
-                let placeholder = cap[1].to_string();
-                let cleaned_placeholder: &str =
-                    placeholder.trim_matches(|c: char| c == '{' || c == '}' || c.is_whitespace());
-                let field_name = placeholder_to_field_name(&cleaned_placeholder.to_string());
-                if syn::parse_str::<syn::Ident>(&field_name).is_ok() {
-                    fields.push(syn::Ident::new(
-                        &field_name,
-                        proc_macro::Span::call_site().into(),
-                    ));
-                    let x = syn::LitStr::new(&field_name, proc_macro::Span::call_site().into());
-                    let y = syn::LitStr::new(&placeholder, proc_macro::Span::call_site().into());
-                    field_names.push(x);
-                    placeholders.push(y);
-                } else {
-                    println!(
-                        "\x1b[34m[Docxside-template]\x1b[0m Invalid placeholder name in file: {}",
-                        placeholder
-                    );
-                }
-            }
-        }
-
-        let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
+        let struct_content = generate_struct_content(corpus);
         let path_str = path.to_str().expect("Failed to convert path to string");
+
+        let fields = struct_content.fields;
+        let placeholders = struct_content.placeholders;
 
         let template_struct = generate_struct(type_ident, path_str, &fields, &placeholders);
 
