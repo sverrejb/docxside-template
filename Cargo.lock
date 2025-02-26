@@ -280,6 +280,7 @@ dependencies = [
  "docx-rs",
  "file-format",
  "heck",
+ "proc-macro2",
  "quote",
  "rayon",
  "regex",
