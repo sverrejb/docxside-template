@@ -3,7 +3,6 @@ name = "docxside-templates"
 version = "0.1.0"
 edition = "2021"
 #build = "build.rs"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 file-format = { version = "0.25.0", features = ["reader-zip"] }
@@ -18,3 +17,6 @@ proc-macro2 = "1.0.93"
 
 [lib]
 proc-macro = true
+
+[workspace]
+members = [".", "test-crate"]
