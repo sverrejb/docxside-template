@@ -2,17 +2,32 @@
 name = "docxside-templates"
 version = "0.1.0"
 edition = "2021"
-#build = "build.rs"
+description = "Type-safe .docx template engine — generate Rust structs from Word templates with {placeholder} patterns"
+license = "MIT"
+repository = "https://github.com/sverrejb/docxside-template"
+readme = "README.md"
+keywords = ["docx", "template", "word", "proc-macro", "codegen"]
+categories = ["template-engine", "text-processing"]
+exclude = [
+    "test-crate/",
+    "scripts/",
+    "output/",
+    "lancedb/",
+    "models/",
+    "todos.md",
+    ".plan.md",
+    ".claude/",
+    "CLAUDE.md",
+    "ROADMAP.md",
+]
 
 [dependencies]
 file-format = { version = "0.25.0", features = ["reader-zip"] }
 heck = "0.5.0"
 docx-rs = "0.4.17"
-rayon = "1.10.0"
 quote = "1.0"
 syn = { version = "2.0.96", features = ["full"] }
 regex = "1.11.1"
-zip = "2.2.2"
 proc-macro2 = "1.0.93"
 
 [lib]

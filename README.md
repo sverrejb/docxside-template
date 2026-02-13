@@ -3,25 +3,41 @@
 > [!WARNING]
 > Work in progress. Subject to change.
 
-`docxside-templates` is a Rust crate for working with .docx / MS Word templates. This crate allows you to generate Rust types based on your docx template files, making it simple to fill out and save templated documents programmatically.
-
-## Templates?
-.docx-files [using custom properties as variables](https://dradis.com/support/guides/word_reports/custom_properties.html) can be used as templates. Further down the road, this crate might support other methods of templating as well. Feel free to make an issue or a PR!
+`docxside-templates` is a Rust proc-macro crate for working with .docx / MS Word templates. It reads `.docx` template files, finds `{placeholder}` patterns in document text, and generates type-safe Rust structs with those placeholders as fields. The generated structs include a `save()` method that produces a new `.docx` with placeholders replaced by field values.
 
 ## Usage
-This crate is centered around code generation. Add a `build.rs` file to the root of your project like so:
+
+Add the crate to your `Cargo.toml`:
+
+```toml
+[dependencies]
+docxside-templates = "0.1"
+zip = "2"
+```
+
+Place your `.docx` templates in a folder (e.g. `templates/`), using `{PlaceholderName}` for variables. Then invoke the macro:
 
 ```rust
+use docxside_templates::generate_templates;
+
+generate_templates!("templates");
+
 fn main() {
-    docxside_templates::generate_types("./path/to/your/templates");
+    // If templates/HelloWorld.docx contains {FirstName} and {Company}:
+    let doc = HelloWorld::new("Alice", "Acme Corp");
+
+    doc.save("output/greeting").unwrap();
+    // Writes output/greeting.docx with placeholders replaced
 }
-
 ```
 
-and include the generated types in your code:
+## How it works
 
-```rust
-use docxside_templates::{include_templates, Save};
+1. The proc macro scans the given directory for `.docx` files at compile time
+2. Each file becomes a struct named after the filename (PascalCase)
+3. `{placeholder}` patterns become struct fields (snake_case)
+4. `save()` opens the original template, replaces all placeholders in the XML, and writes a new `.docx`
 
-include_templates!();
-```
+## License
+
+MIT
