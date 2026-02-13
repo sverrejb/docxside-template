@@ -1,4 +1,4 @@
-use docxside_templates::generate_templates;
+use docxside_template::generate_templates;
 
 generate_templates!("test-crate/templates");
 

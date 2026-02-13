@@ -1,0 +1,26 @@
+[package]
+name = "docxside-template"
+version = "0.1.0"
+edition = "2021"
+description = "Type-safe .docx template engine — generate Rust structs from Word templates with {placeholder} patterns"
+license = "MIT"
+repository = "https://github.com/sverrejb/docxside-template"
+readme = "../README.md"
+keywords = ["docx", "template", "word", "proc-macro", "codegen"]
+categories = ["template-engine", "text-processing"]
+exclude = [
+    "test-crate/",
+    "scripts/",
+    "output/",
+    "lancedb/",
+    "models/",
+    "todos.md",
+    ".plan.md",
+    ".claude/",
+    "CLAUDE.md",
+    "ROADMAP.md",
+]
+
+[dependencies]
+docxside-template-derive = { path = "../docxside-template-derive", version = "0.1.0" }
+zip = "2.2.2"

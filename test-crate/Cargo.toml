@@ -4,5 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-docxside-templates = { path = ".." }
-zip = "2.2.2"
+docxside-template = { path = "../docxside-template" }

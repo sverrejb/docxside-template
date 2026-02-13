@@ -3,7 +3,7 @@
 > [!WARNING]
 > Work in progress. Subject to change.
 
-`docxside-templates` is a Rust proc-macro crate for working with .docx / MS Word templates. It reads `.docx` template files, finds `{placeholder}` patterns in document text, and generates type-safe Rust structs with those placeholders as fields. The generated structs include a `save()` method that produces a new `.docx` with placeholders replaced by field values.
+`docxside-template` is a Rust crate for working with .docx / MS Word templates. It reads `.docx` template files, finds `{placeholder}` patterns in document text, and generates type-safe Rust structs with those placeholders as fields. The generated structs include a `save()` method that produces a new `.docx` with placeholders replaced by field values.
 
 ## Usage
 
@@ -11,14 +11,13 @@ Add the crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-docxside-templates = "0.1"
-zip = "2"
+docxside-template = "0.1"
 ```
 
 Place your `.docx` templates in a folder (e.g. `templates/`), using `{PlaceholderName}` for variables. Then invoke the macro:
 
 ```rust
-use docxside_templates::generate_templates;
+use docxside_template::generate_templates;
 
 generate_templates!("templates");
 
