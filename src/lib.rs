@@ -8,6 +8,7 @@ use proc_macro2;
 use quote::quote;
 use regex::Regex;
 use std::{
+    collections::HashMap,
     fs::{self, File},
     io::Read,
     path::PathBuf,
@@ -23,6 +24,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
     let paths = fs::read_dir(folder_path).expect("Failed to read the folder");
     let mut structs = Vec::new();
+    let mut seen_type_names: HashMap<String, PathBuf> = HashMap::new();
 
     for path in paths {
         //todo: maybe recursive traversal?
@@ -36,14 +38,36 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
         let type_name = match derive_type_name_from_filename(&path) {
             Ok(name) if parse_str::<syn::Ident>(&name).is_ok() => name,
-            _ => {
-                print_docxside_message(
-                    "Unable to derive type name from file name. skipping.",
-                    &path,
-                );
+            other => {
+                let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                if stem.starts_with(|c: char| c.is_ascii_digit()) {
+                    let attempted = other.unwrap_or_default();
+                    print_docxside_message(
+                        &format!(
+                            "Filename starts with a digit, which produces an invalid Rust type name `{}`. Skipping.",
+                            if attempted.is_empty() { stem.to_string() } else { attempted }
+                        ),
+                        &path,
+                    );
+                } else {
+                    print_docxside_message(
+                        "Unable to derive a valid Rust type name from file name. Skipping.",
+                        &path,
+                    );
+                }
                 continue;
             }
         };
+
+        if let Some(existing_path) = seen_type_names.get(&type_name) {
+            panic!(
+                "\n\n[Docxside-template] Type name collision: both {:?} and {:?} produce the struct name `{}`.\n\
+                Rename one of the files to avoid this conflict.\n",
+                existing_path, path, type_name
+            );
+        }
+        seen_type_names.insert(type_name.clone(), path.clone());
+
         let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
 
         let mut file = match File::open(&path) {
