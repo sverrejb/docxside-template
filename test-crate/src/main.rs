@@ -1,23 +1,28 @@
+use std::io::{self, Write};
+
 use docxside_template::generate_templates;
 
 generate_templates!("test-crate/templates");
 
 fn main() {
-    let hw = HelloWorld::new("Sverre", "Docxside");
-    println!("{:?}", hw);
+    print!("What is your name? ");
+    io::stdout().flush().unwrap();
+    let mut name = String::new();
+    io::stdin().read_line(&mut name).unwrap();
+    let name = name.trim();
 
-    match hw.save("output/hello") {
-        Ok(_) => println!("Saved to output/hello.docx"),
-        Err(e) => println!("Save failed: {}", e),
-    }
+    print!("Filename? ");
+    io::stdout().flush().unwrap();
+    let mut filename = String::new();
+    io::stdin().read_line(&mut filename).unwrap();
+    let filename = filename.trim();
 
-    // Test: split-runs template — placeholders split across <w:r> boundaries
-    let sr = SplitRunsTemplate::new("Alice", "Acme Corp");
-    println!("{:?}", sr);
+    let hw = HelloWorld::new(name, "docxside");
 
-    match sr.save("output/split_runs_output") {
-        Ok(_) => println!("Saved split_runs to output/split_runs_output.docx"),
-        Err(e) => println!("Split runs save failed: {}", e),
+    let path = format!("output/{filename}");
+    match hw.save(&path) {
+        Ok(_) => println!("Saved to {path}.docx"),
+        Err(e) => println!("Save failed: {e}"),
     }
 }
 

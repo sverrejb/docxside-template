@@ -32,6 +32,9 @@ pub fn save_docx_bytes(
     let cursor = Cursor::new(template_bytes);
     let mut archive = zip::read::ZipArchive::new(cursor)?;
 
+    if let Some(parent) = output_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
     let output_file = std::fs::File::create(output_path)?;
     let mut zip_writer = zip::write::ZipWriter::new(output_file);
     let options = zip::write::SimpleFileOptions::default();
