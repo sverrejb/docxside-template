@@ -30,6 +30,20 @@ fn main() {
 }
 ```
 
+## Examples
+
+**Save to file** — fill a template and write it to disk:
+```bash
+cargo run -p save-to-file
+```
+
+**To bytes** — fill a template and get the `.docx` as `Vec<u8>` in memory, useful for piping into other processing steps:
+```bash
+cargo run -p to-bytes
+```
+
+See the [`examples/`](examples/) directory for source code.
+
 ## How it works
 
 1. The proc macro scans the given directory for `.docx` files at compile time

@@ -1,0 +1,7 @@
+[package]
+name = "save-to-file"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+docxside-template = { path = "../../docxside-template" }

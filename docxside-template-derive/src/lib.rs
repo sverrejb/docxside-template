@@ -145,6 +145,12 @@ fn generate_struct(
                 pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
                     docxside_template::save_docx(self, path.as_ref().with_extension("docx"))
                 }
+
+                pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+                    use docxside_template::DocxTemplate;
+                    let template_bytes = std::fs::read(self.template_path())?;
+                    docxside_template::build_docx_bytes(&template_bytes, &self.replacements())
+                }
             }
 
             impl<'a> docxside_template::DocxTemplate for #type_ident<'a> {
@@ -165,6 +171,12 @@ fn generate_struct(
             impl #type_ident {
                 pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
                     docxside_template::save_docx(self, path.as_ref().with_extension("docx"))
+                }
+
+                pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+                    use docxside_template::DocxTemplate;
+                    let template_bytes = std::fs::read(self.template_path())?;
+                    docxside_template::build_docx_bytes(&template_bytes, &self.replacements())
                 }
             }
 

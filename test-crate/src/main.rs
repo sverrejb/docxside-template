@@ -24,5 +24,10 @@ fn main() {
         Ok(_) => println!("Saved to {path}.docx"),
         Err(e) => println!("Save failed: {e}"),
     }
+
+    match hw.to_bytes() {
+        Ok(bytes) => println!("to_bytes() returned {} bytes", bytes.len()),
+        Err(e) => println!("to_bytes() failed: {e}"),
+    }
 }
 

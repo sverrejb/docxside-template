@@ -24,19 +24,15 @@ pub fn save_docx_from_file(
     save_docx_bytes(&template_bytes, output_path, replacements)
 }
 
-pub fn save_docx_bytes(
+pub fn build_docx_bytes(
     template_bytes: &[u8],
-    output_path: &Path,
     replacements: &[(&str, &str)],
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let cursor = Cursor::new(template_bytes);
     let mut archive = zip::read::ZipArchive::new(cursor)?;
 
-    if let Some(parent) = output_path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-    let output_file = std::fs::File::create(output_path)?;
-    let mut zip_writer = zip::write::ZipWriter::new(output_file);
+    let mut output_buf = Cursor::new(Vec::new());
+    let mut zip_writer = zip::write::ZipWriter::new(&mut output_buf);
     let options = zip::write::SimpleFileOptions::default();
 
     for i in 0..archive.len() {
@@ -57,6 +53,19 @@ pub fn save_docx_bytes(
     }
 
     zip_writer.finish()?;
+    Ok(output_buf.into_inner())
+}
+
+pub fn save_docx_bytes(
+    template_bytes: &[u8],
+    output_path: &Path,
+    replacements: &[(&str, &str)],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = build_docx_bytes(template_bytes, replacements)?;
+    if let Some(parent) = output_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(output_path, bytes)?;
     Ok(())
 }
 
