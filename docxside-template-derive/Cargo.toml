@@ -5,6 +5,7 @@ edition = "2021"
 description = "Proc-macro internals for docxside-template — do not depend on this directly"
 license = "MIT"
 repository = "https://github.com/sverrejb/docxside-template"
+readme = "README.md"
 
 [dependencies]
 file-format = { version = "0.25.0", features = ["reader-zip"] }
