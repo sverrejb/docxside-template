@@ -36,7 +36,7 @@ fn main() {
     // Writes output/greeting.docx with placeholders replaced
     doc.save("output/greeting").unwrap();
 
-    // Or outputs the filled out template as bytes:
+    // Or outputs the filled template as bytes:
     doc.to_bytes()
 }
 ```

@@ -121,9 +121,16 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         let path_str = path.to_str().expect("Failed to convert path to string");
 
         let fields = struct_content.fields;
-        let placeholders = struct_content.placeholders;
+        let replacement_placeholders = struct_content.replacement_placeholders;
+        let replacement_fields = struct_content.replacement_fields;
 
-        let template_struct = generate_struct(type_ident, path_str, &fields, &placeholders);
+        let template_struct = generate_struct(
+            type_ident,
+            path_str,
+            &fields,
+            &replacement_placeholders,
+            &replacement_fields,
+        );
 
         structs.push(template_struct)
     }
@@ -139,7 +146,8 @@ fn generate_struct(
     type_ident: syn::Ident,
     path_str: &str,
     fields: &[syn::Ident],
-    placeholders: &[syn::LitStr],
+    replacement_placeholders: &[syn::LitStr],
+    replacement_fields: &[syn::Ident],
 ) -> proc_macro2::TokenStream {
     let has_fields = !fields.is_empty();
 
@@ -174,7 +182,7 @@ fn generate_struct(
                 }
 
                 fn replacements(&self) -> Vec<(&str, &str)> {
-                    vec![#( (#placeholders, self.#fields), )*]
+                    vec![#( (#replacement_placeholders, self.#replacement_fields), )*]
                 }
             }
         }
@@ -209,14 +217,20 @@ fn generate_struct(
 }
 
 struct StructContent {
+    /// Unique fields for the struct definition and constructor.
     fields: Vec<proc_macro2::Ident>,
-    placeholders: Vec<LitStr>,
+    /// All placeholder/field pairs for replacements (may have multiple
+    /// placeholder strings mapping to the same field, e.g. `{name}` and `{ name }`).
+    replacement_placeholders: Vec<LitStr>,
+    replacement_fields: Vec<proc_macro2::Ident>,
 }
 
 fn generate_struct_content(corpus: Vec<String>) -> StructContent {
     let re = Regex::new(r"(\{\s*[^}]+\s*\})").unwrap();
+    let mut seen_fields = std::collections::HashSet::new();
     let mut fields = Vec::new();
-    let mut placeholders = Vec::new();
+    let mut replacement_placeholders = Vec::new();
+    let mut replacement_fields = Vec::new();
 
     for text in corpus {
         for cap in re.captures_iter(&text) {
@@ -225,12 +239,17 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
                 placeholder.trim_matches(|c: char| c == '{' || c == '}' || c.is_whitespace());
             let field_name = placeholder_to_field_name(&cleaned_placeholder.to_string());
             if syn::parse_str::<syn::Ident>(&field_name).is_ok() {
-                fields.push(syn::Ident::new(
+                let ident = syn::Ident::new(
                     &field_name,
                     proc_macro::Span::call_site().into(),
-                ));
-                let y = syn::LitStr::new(&placeholder, proc_macro::Span::call_site().into());
-                placeholders.push(y);
+                );
+                if seen_fields.insert(field_name) {
+                    fields.push(ident.clone());
+                }
+                replacement_placeholders.push(
+                    syn::LitStr::new(&placeholder, proc_macro::Span::call_site().into()),
+                );
+                replacement_fields.push(ident);
             } else {
                 println!(
                     "\x1b[34m[Docxside-template]\x1b[0m Invalid placeholder name in file: {}",
@@ -242,7 +261,8 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
 
     StructContent {
         fields,
-        placeholders,
+        replacement_placeholders,
+        replacement_fields,
     }
 }
 

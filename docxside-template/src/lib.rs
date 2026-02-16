@@ -167,3 +167,123 @@ pub fn replace_placeholders_in_xml(xml: &str, replacements: &[(&str, &str)]) -> 
 
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn replace_single_run_placeholder() {
+        let xml = r#"<w:t>{Name}</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "Alice")]);
+        assert_eq!(result, r#"<w:t>Alice</w:t>"#);
+    }
+
+    #[test]
+    fn replace_placeholder_split_across_runs() {
+        let xml = r#"<w:t>{Na</w:t><w:t>me}</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "Alice")]);
+        assert_eq!(result, r#"<w:t>Alice</w:t><w:t></w:t>"#);
+    }
+
+    #[test]
+    fn replace_placeholder_with_inner_whitespace() {
+        let xml = r#"<w:t>Hello { Name }!</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{ Name }", "Alice")]);
+        assert_eq!(result, r#"<w:t>Hello Alice!</w:t>"#);
+    }
+
+    #[test]
+    fn replace_both_whitespace_variants() {
+        let xml = r#"<w:t>{Name} and { Name }</w:t>"#;
+        let result = replace_placeholders_in_xml(
+            xml,
+            &[("{Name}", "Alice"), ("{ Name }", "Alice")],
+        );
+        assert_eq!(result, r#"<w:t>Alice and Alice</w:t>"#);
+    }
+
+    #[test]
+    fn replace_multiple_placeholders() {
+        let xml = r#"<w:t>Hello {First} {Last}!</w:t>"#;
+        let result = replace_placeholders_in_xml(
+            xml,
+            &[("{First}", "Alice"), ("{Last}", "Smith")],
+        );
+        assert_eq!(result, r#"<w:t>Hello Alice Smith!</w:t>"#);
+    }
+
+    #[test]
+    fn no_placeholders_returns_unchanged() {
+        let xml = r#"<w:t>No placeholders here</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "Alice")]);
+        assert_eq!(result, xml);
+    }
+
+    #[test]
+    fn no_wt_tags_returns_unchanged() {
+        let xml = r#"<w:p>plain paragraph</w:p>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "Alice")]);
+        assert_eq!(result, xml);
+    }
+
+    #[test]
+    fn empty_replacements_returns_unchanged() {
+        let xml = r#"<w:t>{Name}</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[]);
+        assert_eq!(result, xml);
+    }
+
+    #[test]
+    fn preserves_wt_attributes() {
+        let xml = r#"<w:t xml:space="preserve">{Name}</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "Alice")]);
+        assert_eq!(result, r#"<w:t xml:space="preserve">Alice</w:t>"#);
+    }
+
+    #[test]
+    fn build_docx_bytes_produces_valid_zip() {
+        let template_path = Path::new("../test-crate/templates/HelloWorld.docx");
+        if !template_path.exists() {
+            return;
+        }
+        let template_bytes = std::fs::read(template_path).unwrap();
+        let result = build_docx_bytes(
+            &template_bytes,
+            &[("{ firstName }", "Test"), ("{ productName }", "Lib")],
+        )
+        .unwrap();
+
+        assert!(!result.is_empty());
+        let cursor = Cursor::new(&result);
+        let archive = zip::ZipArchive::new(cursor).expect("output should be a valid zip");
+        assert!(archive.len() > 0);
+    }
+
+    #[test]
+    fn build_docx_bytes_replaces_content() {
+        let template_path = Path::new("../test-crate/templates/HelloWorld.docx");
+        if !template_path.exists() {
+            return;
+        }
+        let template_bytes = std::fs::read(template_path).unwrap();
+        let result = build_docx_bytes(
+            &template_bytes,
+            &[("{ firstName }", "Alice"), ("{ productName }", "Docxside")],
+        )
+        .unwrap();
+
+        let cursor = Cursor::new(&result);
+        let mut archive = zip::ZipArchive::new(cursor).unwrap();
+        let mut doc_xml = String::new();
+        archive
+            .by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut doc_xml)
+            .unwrap();
+        assert!(doc_xml.contains("Alice"));
+        assert!(doc_xml.contains("Docxside"));
+        assert!(!doc_xml.contains("firstName"));
+        assert!(!doc_xml.contains("productName"));
+    }
+}
