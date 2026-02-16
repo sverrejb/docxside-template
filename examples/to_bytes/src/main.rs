@@ -3,7 +3,10 @@ use docxside_template::generate_templates;
 generate_templates!("examples/to_bytes/templates");
 
 fn main() {
-    let doc = HelloWorld::new("Alice", "docxside");
+    let doc = HelloWorld {
+        first_name: "Alice",
+        product_name: "docxside",
+    };
 
     match doc.to_bytes() {
         Ok(bytes) => println!("Generated {}-byte docx in memory", bytes.len()),

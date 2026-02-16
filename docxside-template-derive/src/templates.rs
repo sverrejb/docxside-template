@@ -24,6 +24,7 @@ mod tests {
             ("first-name", "first_name"),
             ("first name", "first_name"),
             ("FIRSTNAME", "firstname"),
+            ("ZIPCODE", "zipcode"),
         ];
         for (input, expected) in cases {
             let result = placeholder_to_field_name(&input.to_string());
