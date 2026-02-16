@@ -7,14 +7,22 @@
 
 ## Usage
 
-Add the crate to your `Cargo.toml`:
-
-```toml
-[dependencies]
-docxside-template = "0.1"
+```bash
+cargo add docxside-template
 ```
 
-Place your `.docx` templates in a folder (e.g. `templates/`), using `{PlaceholderName}` for variables. Then invoke the macro:
+Place your `.docx` templates in a folder (e.g. `templates/`), using `{PlaceholderName}` for variables. Placeholders are converted to snake_case struct fields automatically:
+
+| Placeholder in template | Struct field |
+|------------------------|-------------|
+| `{FirstName}` | `first_name` |
+| `{first_name}` | `first_name` |
+| `{firstName}` | `first_name` |
+| `{first-name}` | `first_name` |
+| `{FIRST_NAME}` | `first_name` |
+| `{first name}` | `first_name` |
+
+Then invoke the macro:
 
 ```rust
 use docxside_template::generate_templates;
@@ -25,8 +33,11 @@ fn main() {
     // If templates/HelloWorld.docx contains {FirstName} and {Company}:
     let doc = HelloWorld::new("Alice", "Acme Corp");
 
-    doc.save("output/greeting").unwrap();
     // Writes output/greeting.docx with placeholders replaced
+    doc.save("output/greeting").unwrap();
+
+    // Or outputs the filled out template as bytes:
+    doc.to_bytes()
 }
 ```
 

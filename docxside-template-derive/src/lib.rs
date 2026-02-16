@@ -17,6 +17,21 @@ use std::{
 use syn::{parse_str, LitStr};
 use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 
+/// Scans a directory for `.docx` template files and generates a typed struct for each one.
+///
+/// # Usage
+///
+/// ```rust,ignore
+/// use docxside_template::generate_templates;
+///
+/// generate_templates!("path/to/templates");
+/// ```
+///
+/// For each `.docx` file, this generates a struct with:
+/// - A field for each `{placeholder}` found in the document text (converted to snake_case)
+/// - `new()` constructor taking all field values as `&str`
+/// - `save(path)` to write a filled-in `.docx` to disk
+/// - `to_bytes()` to get the filled-in `.docx` as `Vec<u8>`
 #[proc_macro]
 pub fn generate_templates(input: TokenStream) -> TokenStream {
     let input_string = input.to_string();
