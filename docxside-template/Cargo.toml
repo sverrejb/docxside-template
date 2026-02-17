@@ -21,6 +21,9 @@ exclude = [
     "ROADMAP.md",
 ]
 
+[features]
+embed = ["docxside-template-derive/embed"]
+
 [dependencies]
 docxside-template-derive = { path = "../docxside-template-derive", version = "0.1.0" }
 zip = "2.2.2"

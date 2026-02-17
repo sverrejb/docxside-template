@@ -19,6 +19,12 @@ use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 
 /// Scans a directory for `.docx` template files and generates a typed struct for each one.
 ///
+/// Template paths are resolved as absolute paths at compile time, so binaries work
+/// regardless of working directory.
+///
+/// With the `embed` feature enabled, template bytes are baked into the binary via
+/// `include_bytes!`, making it fully self-contained with no runtime file dependencies.
+///
 /// # Usage
 ///
 /// ```rust,ignore
@@ -34,6 +40,8 @@ use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 /// - `to_bytes()` to get the filled-in `.docx` as `Vec<u8>`
 #[proc_macro]
 pub fn generate_templates(input: TokenStream) -> TokenStream {
+    let embed = cfg!(feature = "embed");
+
     let input_string = input.to_string();
     let folder_path = input_string.trim_matches('"');
 
@@ -118,7 +126,11 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         }
 
         let struct_content = generate_struct_content(corpus);
-        let path_str = path.to_str().expect("Failed to convert path to string");
+
+        // Canonicalize to get an absolute path for the template file.
+        // This is used both for CARGO_MANIFEST_DIR-relative paths and for include_bytes!.
+        let abs_path = path.canonicalize().expect("Failed to canonicalize template path");
+        let abs_path_str = abs_path.to_str().expect("Failed to convert path to string");
 
         let fields = struct_content.fields;
         let replacement_placeholders = struct_content.replacement_placeholders;
@@ -126,10 +138,11 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
         let template_struct = generate_struct(
             type_ident,
-            path_str,
+            abs_path_str,
             &fields,
             &replacement_placeholders,
             &replacement_fields,
+            embed,
         );
 
         structs.push(template_struct)
@@ -144,12 +157,46 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
 fn generate_struct(
     type_ident: syn::Ident,
-    path_str: &str,
+    abs_path: &str,
     fields: &[syn::Ident],
     replacement_placeholders: &[syn::LitStr],
     replacement_fields: &[syn::Ident],
+    embed: bool,
 ) -> proc_macro2::TokenStream {
     let has_fields = !fields.is_empty();
+    let abs_path_lit = syn::LitStr::new(abs_path, proc_macro::Span::call_site().into());
+
+    let save_and_bytes = if embed {
+        quote! {
+            const TEMPLATE_BYTES: &'static [u8] = include_bytes!(#abs_path_lit);
+
+            pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
+                use docxside_template::DocxTemplate;
+                docxside_template::save_docx_bytes(
+                    Self::TEMPLATE_BYTES,
+                    path.as_ref().with_extension("docx").as_path(),
+                    &self.replacements(),
+                )
+            }
+
+            pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+                use docxside_template::DocxTemplate;
+                docxside_template::build_docx_bytes(Self::TEMPLATE_BYTES, &self.replacements())
+            }
+        }
+    } else {
+        quote! {
+            pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
+                docxside_template::save_docx(self, path.as_ref().with_extension("docx"))
+            }
+
+            pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+                use docxside_template::DocxTemplate;
+                let template_bytes = std::fs::read(self.template_path())?;
+                docxside_template::build_docx_bytes(&template_bytes, &self.replacements())
+            }
+        }
+    };
 
     if has_fields {
         quote! {
@@ -165,20 +212,12 @@ fn generate_struct(
                     }
                 }
 
-                pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
-                    docxside_template::save_docx(self, path.as_ref().with_extension("docx"))
-                }
-
-                pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-                    use docxside_template::DocxTemplate;
-                    let template_bytes = std::fs::read(self.template_path())?;
-                    docxside_template::build_docx_bytes(&template_bytes, &self.replacements())
-                }
+                #save_and_bytes
             }
 
             impl<'a> docxside_template::DocxTemplate for #type_ident<'a> {
                 fn template_path(&self) -> &std::path::Path {
-                    std::path::Path::new(#path_str)
+                    std::path::Path::new(#abs_path_lit)
                 }
 
                 fn replacements(&self) -> Vec<(&str, &str)> {
@@ -192,20 +231,12 @@ fn generate_struct(
             pub struct #type_ident;
 
             impl #type_ident {
-                pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
-                    docxside_template::save_docx(self, path.as_ref().with_extension("docx"))
-                }
-
-                pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-                    use docxside_template::DocxTemplate;
-                    let template_bytes = std::fs::read(self.template_path())?;
-                    docxside_template::build_docx_bytes(&template_bytes, &self.replacements())
-                }
+                #save_and_bytes
             }
 
             impl docxside_template::DocxTemplate for #type_ident {
                 fn template_path(&self) -> &std::path::Path {
-                    std::path::Path::new(#path_str)
+                    std::path::Path::new(#abs_path_lit)
                 }
 
                 fn replacements(&self) -> Vec<(&str, &str)> {

@@ -16,5 +16,8 @@ syn = { version = "2.0.96", features = ["full"] }
 regex = "1.11.1"
 proc-macro2 = "1.0.93"
 
+[features]
+embed = []
+
 [lib]
 proc-macro = true

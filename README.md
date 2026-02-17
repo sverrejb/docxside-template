@@ -53,6 +53,17 @@ Placeholders are converted to snake_case struct fields automatically:
 
 
 
+## Embedded templates
+
+By default, `generate_templates!` reads template files from disk at runtime. If you want a fully self-contained binary with no runtime file dependencies, enable the `embed` feature:
+
+```toml
+[dependencies]
+docxside-template = { version = "0.1.0", features = ["embed"] }
+```
+
+With `embed` enabled, template bytes are baked into the binary at compile time via `include_bytes!`. The same `generate_templates!` macro is used — no code changes needed.
+
 ## Examples
 
 **Save to file** — fill a template and write it to disk:
@@ -63,6 +74,11 @@ cargo run -p save-to-file
 **To bytes** — fill a template and get the `.docx` as `Vec<u8>` in memory, useful for piping into other processing steps:
 ```bash
 cargo run -p to-bytes
+```
+
+**Embedded** — template bytes baked into the binary, no runtime file access needed:
+```bash
+cargo run -p embedded
 ```
 
 See the [`examples/`](examples/) directory for source code.
