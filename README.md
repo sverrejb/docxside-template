@@ -57,9 +57,8 @@ Placeholders are converted to snake_case struct fields automatically:
 
 By default, `generate_templates!` reads template files from disk at runtime. If you want a fully self-contained binary with no runtime file dependencies, enable the `embed` feature:
 
-```toml
-[dependencies]
-docxide-template = { version = "0.1.0", features = ["embed"] }
+```bash
+cargo add docxide-template --features embed
 ```
 
 With `embed` enabled, template bytes are baked into the binary at compile time via `include_bytes!`. The same `generate_templates!` macro is used — no code changes needed.
