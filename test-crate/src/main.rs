@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use docxside_template::generate_templates;
+use docxide_template::generate_templates;
 
 generate_templates!("test-crate/templates");
 
@@ -17,7 +17,7 @@ fn main() {
     io::stdin().read_line(&mut filename).unwrap();
     let filename = filename.trim();
 
-    let hw = HelloWorld::new(name, "docxside");
+    let hw = HelloWorld::new(name, "docxide");
 
     let path = format!("output/{filename}");
     match hw.save(&path) {

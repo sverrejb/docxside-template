@@ -28,7 +28,7 @@ use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 /// # Usage
 ///
 /// ```rust,ignore
-/// use docxside_template::generate_templates;
+/// use docxide_template::generate_templates;
 ///
 /// generate_templates!("path/to/templates");
 /// ```
@@ -55,7 +55,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
         // TOOD: Move all validation into function
         if !is_valid_docx_file(&path) {
-            print_docxside_message("Invalid template file, skipping.", &path);
+            print_docxide_message("Invalid template file, skipping.", &path);
             continue;
         }
 
@@ -65,7 +65,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                 let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
                 if stem.starts_with(|c: char| c.is_ascii_digit()) {
                     let attempted = other.unwrap_or_default();
-                    print_docxside_message(
+                    print_docxide_message(
                         &format!(
                             "Filename starts with a digit, which produces an invalid Rust type name `{}`. Skipping.",
                             if attempted.is_empty() { stem.to_string() } else { attempted }
@@ -73,7 +73,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
                         &path,
                     );
                 } else {
-                    print_docxside_message(
+                    print_docxide_message(
                         "Unable to derive a valid Rust type name from file name. Skipping.",
                         &path,
                     );
@@ -84,7 +84,7 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
         if let Some(existing_path) = seen_type_names.get(&type_name) {
             panic!(
-                "\n\n[Docxside-template] Type name collision: both {:?} and {:?} produce the struct name `{}`.\n\
+                "\n\n[Docxide-template] Type name collision: both {:?} and {:?} produce the struct name `{}`.\n\
                 Rename one of the files to avoid this conflict.\n",
                 existing_path, path, type_name
             );
@@ -103,14 +103,14 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
         let mut buf = vec![];
 
         if let Err(_) = file.read_to_end(&mut buf) {
-            print_docxside_message("Unable to read file content. Skipping.", &path);
+            print_docxide_message("Unable to read file content. Skipping.", &path);
             continue;
         }
 
         let doc = match read_docx(&buf) {
             Ok(doc) => doc,
             Err(_) => {
-                print_docxside_message("Unable to read docx content. Skipping.", &path);
+                print_docxide_message("Unable to read docx content. Skipping.", &path);
                 continue;
             }
         };
@@ -171,8 +171,8 @@ fn generate_struct(
             const TEMPLATE_BYTES: &'static [u8] = include_bytes!(#abs_path_lit);
 
             pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
-                use docxside_template::DocxTemplate;
-                docxside_template::save_docx_bytes(
+                use docxide_template::DocxTemplate;
+                docxide_template::save_docx_bytes(
                     Self::TEMPLATE_BYTES,
                     path.as_ref().with_extension("docx").as_path(),
                     &self.replacements(),
@@ -180,20 +180,20 @@ fn generate_struct(
             }
 
             pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-                use docxside_template::DocxTemplate;
-                docxside_template::build_docx_bytes(Self::TEMPLATE_BYTES, &self.replacements())
+                use docxide_template::DocxTemplate;
+                docxide_template::build_docx_bytes(Self::TEMPLATE_BYTES, &self.replacements())
             }
         }
     } else {
         quote! {
             pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
-                docxside_template::save_docx(self, path.as_ref().with_extension("docx"))
+                docxide_template::save_docx(self, path.as_ref().with_extension("docx"))
             }
 
             pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-                use docxside_template::DocxTemplate;
+                use docxide_template::DocxTemplate;
                 let template_bytes = std::fs::read(self.template_path())?;
-                docxside_template::build_docx_bytes(&template_bytes, &self.replacements())
+                docxide_template::build_docx_bytes(&template_bytes, &self.replacements())
             }
         }
     };
@@ -215,7 +215,7 @@ fn generate_struct(
                 #save_and_bytes
             }
 
-            impl<'a> docxside_template::DocxTemplate for #type_ident<'a> {
+            impl<'a> docxide_template::DocxTemplate for #type_ident<'a> {
                 fn template_path(&self) -> &std::path::Path {
                     std::path::Path::new(#abs_path_lit)
                 }
@@ -234,7 +234,7 @@ fn generate_struct(
                 #save_and_bytes
             }
 
-            impl docxside_template::DocxTemplate for #type_ident {
+            impl docxide_template::DocxTemplate for #type_ident {
                 fn template_path(&self) -> &std::path::Path {
                     std::path::Path::new(#abs_path_lit)
                 }
@@ -283,7 +283,7 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
                 replacement_fields.push(ident);
             } else {
                 println!(
-                    "\x1b[34m[Docxside-template]\x1b[0m Invalid placeholder name in file: {}",
+                    "\x1b[34m[Docxide-template]\x1b[0m Invalid placeholder name in file: {}",
                     placeholder
                 );
             }
@@ -297,8 +297,8 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
     }
 }
 
-fn print_docxside_message(message: &str, path: &PathBuf) {
-    println!("\x1b[34m[Docxside-template]\x1b[0m {} {:?}", message, path);
+fn print_docxide_message(message: &str, path: &PathBuf) {
+    println!("\x1b[34m[Docxide-template]\x1b[0m {} {:?}", message, path);
 }
 
 fn is_valid_docx_file(path: &PathBuf) -> bool {

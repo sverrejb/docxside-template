@@ -1,10 +1,10 @@
 [package]
-name = "docxside-template-derive"
+name = "docxide-template-derive"
 version = "0.1.0"
 edition = "2021"
-description = "Proc-macro internals for docxside-template — do not depend on this directly"
+description = "Proc-macro internals for docxide-template — do not depend on this directly"
 license = "MIT"
-repository = "https://github.com/sverrejb/docxside-template"
+repository = "https://github.com/sverrejb/docxide-template"
 readme = "README.md"
 
 [dependencies]

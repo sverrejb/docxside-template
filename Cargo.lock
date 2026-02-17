@@ -266,15 +266,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "docxside-template"
+name = "docxide-template"
 version = "0.1.0"
 dependencies = [
- "docxside-template-derive",
+ "docxide-template-derive",
  "zip 2.4.2",
 ]
 
 [[package]]
-name = "docxside-template-derive"
+name = "docxide-template-derive"
 version = "0.1.0"
 dependencies = [
  "docx-rs",
@@ -290,7 +290,7 @@ dependencies = [
 name = "embedded"
 version = "0.1.0"
 dependencies = [
- "docxside-template",
+ "docxide-template",
 ]
 
 [[package]]
@@ -672,7 +672,7 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 name = "save-to-file"
 version = "0.1.0"
 dependencies = [
- "docxside-template",
+ "docxide-template",
 ]
 
 [[package]]
@@ -762,7 +762,7 @@ dependencies = [
 name = "test-crate"
 version = "0.1.0"
 dependencies = [
- "docxside-template",
+ "docxide-template",
 ]
 
 [[package]]
@@ -822,7 +822,7 @@ checksum = "7694e1cfe791f8d31026952abf09c69ca6f6fa4e1a1229e18988f06a04a12dca"
 name = "to-bytes"
 version = "0.1.0"
 dependencies = [
- "docxside-template",
+ "docxide-template",
 ]
 
 [[package]]

@@ -1,10 +1,10 @@
 //! Type-safe `.docx` template engine.
 //!
 //! Use [`generate_templates!`] to scan a directory of `.docx` files at compile time
-//! and generate a struct per template. See the [README](https://github.com/sverrejb/docxside-template)
+//! and generate a struct per template. See the [README](https://github.com/sverrejb/docxide-template)
 //! for full usage instructions.
 
-pub use docxside_template_derive::generate_templates;
+pub use docxide_template_derive::generate_templates;
 
 use std::io::{Cursor, Read, Write};
 use std::path::Path;
@@ -269,7 +269,7 @@ mod tests {
         let template_bytes = std::fs::read(template_path).unwrap();
         let result = build_docx_bytes(
             &template_bytes,
-            &[("{ firstName }", "Alice"), ("{ productName }", "Docxside")],
+            &[("{ firstName }", "Alice"), ("{ productName }", "Docxide")],
         )
         .unwrap();
 
@@ -282,7 +282,7 @@ mod tests {
             .read_to_string(&mut doc_xml)
             .unwrap();
         assert!(doc_xml.contains("Alice"));
-        assert!(doc_xml.contains("Docxside"));
+        assert!(doc_xml.contains("Docxide"));
         assert!(!doc_xml.contains("firstName"));
         assert!(!doc_xml.contains("productName"));
     }

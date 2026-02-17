@@ -1,11 +1,11 @@
-use docxside_template::generate_templates;
+use docxide_template::generate_templates;
 
 generate_templates!("examples/to_bytes/templates");
 
 fn main() {
     let doc = HelloWorld {
         first_name: "Alice",
-        product_name: "docxside",
+        product_name: "docxide",
     };
 
     match doc.to_bytes() {

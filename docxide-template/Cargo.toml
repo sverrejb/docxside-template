@@ -1,10 +1,10 @@
 [package]
-name = "docxside-template"
+name = "docxide-template"
 version = "0.1.0"
 edition = "2021"
 description = "Type-safe .docx template engine — generate Rust structs from Word templates with {placeholder} patterns"
 license = "MIT"
-repository = "https://github.com/sverrejb/docxside-template"
+repository = "https://github.com/sverrejb/docxide-template"
 readme = "../README.md"
 keywords = ["docx", "template", "word", "proc-macro", "codegen"]
 categories = ["template-engine", "text-processing"]
@@ -22,8 +22,8 @@ exclude = [
 ]
 
 [features]
-embed = ["docxside-template-derive/embed"]
+embed = ["docxide-template-derive/embed"]
 
 [dependencies]
-docxside-template-derive = { path = "../docxside-template-derive", version = "0.1.0" }
+docxide-template-derive = { path = "../docxide-template-derive", version = "0.1.0" }
 zip = "2.2.2"

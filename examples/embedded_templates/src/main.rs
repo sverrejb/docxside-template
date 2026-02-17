@@ -1,11 +1,11 @@
-use docxside_template::generate_templates;
+use docxide_template::generate_templates;
 
-generate_templates!("examples/embedded/templates");
+generate_templates!("examples/embedded_templates/templates");
 
 fn main() {
     let doc = HelloWorld {
         first_name: "Alice",
-        product_name: "docxside",
+        product_name: "docxide",
     };
 
     match doc.save("examples/embedded/output/greeting") {
