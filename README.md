@@ -11,14 +11,14 @@
 cargo add docxide-template
 ```
 
-Place your `.docx` templates in a folder (e.g. `templates/`), using `{PlaceholderName}` for variables.
+Place your `.docx` templates in a folder (e.g. `path/to/templates/`), using `{PlaceholderName}` for variables.
 
 Then invoke the macro:
 
 ```rust
 use docxide_template::generate_templates;
 
-generate_templates!("templates");
+generate_templates!("path/to/templates");
 
 fn main() {
     // If templates/HelloWorld.docx contains {FirstName} and {Company}:
