@@ -4,14 +4,12 @@ mod templates;
 use docx_rs::{read_docx, DocumentChild::Paragraph};
 use file_format::FileFormat;
 use proc_macro::TokenStream;
-use proc_macro2;
 use quote::quote;
 use regex::Regex;
 use std::{
     collections::HashMap,
-    fs::{self, File},
-    io::Read,
-    path::PathBuf,
+    fs,
+    path::{Path, PathBuf},
 };
 
 use syn::{parse_str, LitStr};
@@ -93,19 +91,13 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
 
         let type_ident = syn::Ident::new(type_name.as_str(), proc_macro::Span::call_site().into());
 
-        let mut file = match File::open(&path) {
-            Ok(file) => file,
+        let buf = match fs::read(&path) {
+            Ok(buf) => buf,
             Err(_) => {
+                print_docxide_message("Unable to read file content. Skipping.", &path);
                 continue;
             }
         };
-
-        let mut buf = vec![];
-
-        if let Err(_) = file.read_to_end(&mut buf) {
-            print_docxide_message("Unable to read file content. Skipping.", &path);
-            continue;
-        }
 
         let doc = match read_docx(&buf) {
             Ok(doc) => doc,
@@ -115,33 +107,27 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             }
         };
 
-        let content = doc.document.children;
-        let mut corpus: Vec<String> = vec![];
+        let corpus: Vec<String> = doc
+            .document
+            .children
+            .into_iter()
+            .filter_map(|child| match child {
+                Paragraph(p) => Some(p.raw_text()),
+                _ => None,
+            })
+            .collect();
 
-        for child in content {
-            match child {
-                Paragraph(paragraph) => corpus.push(paragraph.raw_text()),
-                _ => {}
-            }
-        }
+        let content = generate_struct_content(corpus);
 
-        let struct_content = generate_struct_content(corpus);
-
-        // Canonicalize to get an absolute path for the template file.
-        // This is used both for CARGO_MANIFEST_DIR-relative paths and for include_bytes!.
         let abs_path = path.canonicalize().expect("Failed to canonicalize template path");
         let abs_path_str = abs_path.to_str().expect("Failed to convert path to string");
-
-        let fields = struct_content.fields;
-        let replacement_placeholders = struct_content.replacement_placeholders;
-        let replacement_fields = struct_content.replacement_fields;
 
         let template_struct = generate_struct(
             type_ident,
             abs_path_str,
-            &fields,
-            &replacement_placeholders,
-            &replacement_fields,
+            &content.fields,
+            &content.replacement_placeholders,
+            &content.replacement_fields,
             embed,
         );
 
@@ -262,31 +248,29 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
     let mut fields = Vec::new();
     let mut replacement_placeholders = Vec::new();
     let mut replacement_fields = Vec::new();
+    let span = proc_macro::Span::call_site().into();
 
-    for text in corpus {
-        for cap in re.captures_iter(&text) {
+    for text in &corpus {
+        for cap in re.captures_iter(text) {
             let placeholder = cap[1].to_string();
-            let cleaned_placeholder: &str =
+            let cleaned =
                 placeholder.trim_matches(|c: char| c == '{' || c == '}' || c.is_whitespace());
-            let field_name = placeholder_to_field_name(&cleaned_placeholder.to_string());
-            if syn::parse_str::<syn::Ident>(&field_name).is_ok() {
-                let ident = syn::Ident::new(
-                    &field_name,
-                    proc_macro::Span::call_site().into(),
-                );
-                if seen_fields.insert(field_name) {
-                    fields.push(ident.clone());
-                }
-                replacement_placeholders.push(
-                    syn::LitStr::new(&placeholder, proc_macro::Span::call_site().into()),
-                );
-                replacement_fields.push(ident);
-            } else {
+            let field_name = placeholder_to_field_name(cleaned);
+
+            if syn::parse_str::<syn::Ident>(&field_name).is_err() {
                 println!(
                     "\x1b[34m[Docxide-template]\x1b[0m Invalid placeholder name in file: {}",
                     placeholder
                 );
+                continue;
             }
+
+            let ident = syn::Ident::new(&field_name, span);
+            if seen_fields.insert(field_name) {
+                fields.push(ident.clone());
+            }
+            replacement_placeholders.push(syn::LitStr::new(&placeholder, span));
+            replacement_fields.push(ident);
         }
     }
 
@@ -297,18 +281,14 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
     }
 }
 
-fn print_docxide_message(message: &str, path: &PathBuf) {
+fn print_docxide_message(message: &str, path: &Path) {
     println!("\x1b[34m[Docxide-template]\x1b[0m {} {:?}", message, path);
 }
 
-fn is_valid_docx_file(path: &PathBuf) -> bool {
+fn is_valid_docx_file(path: &Path) -> bool {
     if !path.is_file() {
         return false;
     }
 
-    match FileFormat::from_file(&path) {
-        Ok(fmt) if fmt.extension() == "docx" => return true,
-        Ok(_) => return false,
-        Err(_) => return false,
-    }
+    matches!(FileFormat::from_file(path), Ok(fmt) if fmt.extension() == "docx")
 }

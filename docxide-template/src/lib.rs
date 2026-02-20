@@ -92,7 +92,7 @@ pub fn build_docx_bytes(
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
-        let file_name: String = file.name().to_string();
+        let file_name = file.name().to_string();
 
         let mut contents = Vec::new();
         file.read_to_end(&mut contents)?;
@@ -149,12 +149,13 @@ fn replace_placeholders_in_xml(xml: &str, replacements: &[(&str, &str)]) -> Stri
 
     let concatenated: String = text_spans.iter().map(|(_, _, t)| t.as_str()).collect();
 
-    let mut offset_map: Vec<(usize, usize)> = Vec::new();
-    for (span_idx, (_, _, text)) in text_spans.iter().enumerate() {
-        for char_offset in 0..text.len() {
-            offset_map.push((span_idx, char_offset));
-        }
-    }
+    let offset_map: Vec<(usize, usize)> = text_spans
+        .iter()
+        .enumerate()
+        .flat_map(|(span_idx, (_, _, text))| {
+            (0..text.len()).map(move |char_offset| (span_idx, char_offset))
+        })
+        .collect();
 
     let mut span_replacements: Vec<Vec<(usize, usize, String)>> = vec![Vec::new(); text_spans.len()];
     for &(placeholder, value) in replacements {
