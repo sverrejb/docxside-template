@@ -35,7 +35,7 @@ use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 ///
 /// For each `.docx` file, this generates a struct with:
 /// - A field for each `{placeholder}` found in the document text (converted to snake_case)
-/// - `new()` constructor taking all field values as `&str`
+/// - `new()` constructor taking all field values as `impl Into<String>`
 /// - `save(path)` to write a filled-in `.docx` to disk
 /// - `to_bytes()` to get the filled-in `.docx` as `Vec<u8>`
 #[proc_macro]
@@ -201,27 +201,27 @@ fn generate_struct(
     if has_fields {
         quote! {
             #[derive(Debug)]
-            pub struct #type_ident<'a> {
-                #(pub #fields: &'a str,)*
+            pub struct #type_ident {
+                #(pub #fields: String,)*
             }
 
-            impl<'a> #type_ident<'a> {
-                pub fn new(#(#fields: &'a str),*) -> Self {
+            impl #type_ident {
+                pub fn new(#(#fields: impl Into<String>),*) -> Self {
                     Self {
-                        #(#fields),*
+                        #(#fields: #fields.into()),*
                     }
                 }
 
                 #save_and_bytes
             }
 
-            impl<'a> docxide_template::DocxTemplate for #type_ident<'a> {
+            impl docxide_template::DocxTemplate for #type_ident {
                 fn template_path(&self) -> &std::path::Path {
                     std::path::Path::new(#abs_path_lit)
                 }
 
                 fn replacements(&self) -> Vec<(&str, &str)> {
-                    vec![#( (#replacement_placeholders, self.#replacement_fields), )*]
+                    vec![#( (#replacement_placeholders, self.#replacement_fields.as_str()), )*]
                 }
             }
         }

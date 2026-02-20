@@ -23,8 +23,8 @@ generate_templates!("path/to/templates");
 fn main() {
     // If templates/HelloWorld.docx contains {FirstName} and {Company}:
     let doc = HelloWorld {
-        first_name: "Alice",
-        company: "Acme Corp",
+        first_name: "Alice".into(),
+        company: "Acme Corp".into(),
     };
 
     // Writes output/greeting.docx with placeholders replaced

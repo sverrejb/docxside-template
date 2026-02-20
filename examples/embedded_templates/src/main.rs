@@ -3,10 +3,7 @@ use docxide_template::generate_templates;
 generate_templates!("examples/embedded_templates/templates");
 
 fn main() {
-    let doc = HelloWorld {
-        first_name: "Alice",
-        product_name: "docxide",
-    };
+    let doc = HelloWorld::new("Alice", "docxide");
 
     match doc.save("examples/embedded/output/greeting") {
         Ok(()) => println!("Saved to examples/embedded/output/greeting.docx"),
