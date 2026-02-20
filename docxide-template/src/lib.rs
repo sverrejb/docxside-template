@@ -9,10 +9,7 @@ pub use docxide_template_derive::generate_templates;
 use std::io::{Cursor, Read, Write};
 use std::path::Path;
 
-/// Trait implemented by all generated template structs.
-///
-/// You won't typically call these methods directly — use the generated
-/// `save()` and `to_bytes()` methods on the struct instead.
+#[doc(hidden)]
 pub trait DocxTemplate {
     /// Returns the path to the original `.docx` template file.
     fn template_path(&self) -> &Path;
@@ -20,7 +17,7 @@ pub trait DocxTemplate {
     fn replacements(&self) -> Vec<(&str, &str)>;
 }
 
-/// Saves a filled-in template to a `.docx` file. Used internally by generated `save()` methods.
+#[doc(hidden)]
 pub fn save_docx<T: DocxTemplate, P: AsRef<Path>>(
     template: &T,
     output_path: P,
@@ -28,8 +25,7 @@ pub fn save_docx<T: DocxTemplate, P: AsRef<Path>>(
     save_docx_from_file(template.template_path(), output_path.as_ref(), &template.replacements())
 }
 
-/// Reads a template from disk and saves the filled-in result to `output_path`.
-pub fn save_docx_from_file(
+fn save_docx_from_file(
     template_path: &Path,
     output_path: &Path,
     replacements: &[(&str, &str)],
@@ -38,11 +34,7 @@ pub fn save_docx_from_file(
     save_docx_bytes(&template_bytes, output_path, replacements)
 }
 
-/// Applies placeholder replacements to a `.docx` template and returns the result as bytes.
-///
-/// This is the core replacement engine. It opens the template as a zip archive,
-/// performs placeholder substitution in all XML and `.rels` files, and writes
-/// the result to a `Vec<u8>`.
+#[doc(hidden)]
 pub fn build_docx_bytes(
     template_bytes: &[u8],
     replacements: &[(&str, &str)],
@@ -75,7 +67,7 @@ pub fn build_docx_bytes(
     Ok(output_buf.into_inner())
 }
 
-/// Like [`build_docx_bytes`], but writes the result directly to a file at `output_path`.
+#[doc(hidden)]
 pub fn save_docx_bytes(
     template_bytes: &[u8],
     output_path: &Path,
@@ -89,11 +81,7 @@ pub fn save_docx_bytes(
     Ok(())
 }
 
-/// Replaces `{placeholder}` patterns in raw Office Open XML.
-///
-/// Handles placeholders that Word may split across multiple `<w:t>` runs
-/// due to formatting or spell-check boundaries.
-pub fn replace_placeholders_in_xml(xml: &str, replacements: &[(&str, &str)]) -> String {
+fn replace_placeholders_in_xml(xml: &str, replacements: &[(&str, &str)]) -> String {
     let mut text_spans: Vec<(usize, usize, String)> = Vec::new();
     let mut search_start = 0;
     while let Some(tag_start) = xml[search_start..].find("<w:t") {
