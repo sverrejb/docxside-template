@@ -170,7 +170,7 @@ fn generate_struct(
         quote! {
             const TEMPLATE_BYTES: &'static [u8] = include_bytes!(#abs_path_lit);
 
-            pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
+            pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), docxide_template::TemplateError> {
                 use docxide_template::DocxTemplate;
                 docxide_template::save_docx_bytes(
                     Self::TEMPLATE_BYTES,
@@ -179,18 +179,18 @@ fn generate_struct(
                 )
             }
 
-            pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+            pub fn to_bytes(&self) -> Result<Vec<u8>, docxide_template::TemplateError> {
                 use docxide_template::DocxTemplate;
                 docxide_template::build_docx_bytes(Self::TEMPLATE_BYTES, &self.replacements())
             }
         }
     } else {
         quote! {
-            pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), Box<dyn std::error::Error>> {
+            pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), docxide_template::TemplateError> {
                 docxide_template::save_docx(self, path.as_ref().with_extension("docx"))
             }
 
-            pub fn to_bytes(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+            pub fn to_bytes(&self) -> Result<Vec<u8>, docxide_template::TemplateError> {
                 use docxide_template::DocxTemplate;
                 let template_bytes = std::fs::read(self.template_path())?;
                 docxide_template::build_docx_bytes(&template_bytes, &self.replacements())

@@ -9,6 +9,50 @@ pub use docxide_template_derive::generate_templates;
 use std::io::{Cursor, Read, Write};
 use std::path::Path;
 
+/// Error type returned by template `save()` and `to_bytes()` methods.
+#[derive(Debug)]
+pub enum TemplateError {
+    /// An I/O error (reading template, writing output, creating directories).
+    Io(std::io::Error),
+    /// The `.docx` template is malformed (bad zip archive, invalid XML encoding).
+    InvalidTemplate(String),
+}
+
+impl std::fmt::Display for TemplateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Io(e) => write!(f, "{}", e),
+            Self::InvalidTemplate(msg) => write!(f, "invalid template: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for TemplateError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Io(e) => Some(e),
+            Self::InvalidTemplate(_) => None,
+        }
+    }
+}
+
+impl From<std::io::Error> for TemplateError {
+    fn from(e: std::io::Error) -> Self { Self::Io(e) }
+}
+
+impl From<zip::result::ZipError> for TemplateError {
+    fn from(e: zip::result::ZipError) -> Self {
+        match e {
+            zip::result::ZipError::Io(io_err) => Self::Io(io_err),
+            other => Self::InvalidTemplate(other.to_string()),
+        }
+    }
+}
+
+impl From<std::string::FromUtf8Error> for TemplateError {
+    fn from(e: std::string::FromUtf8Error) -> Self { Self::InvalidTemplate(e.to_string()) }
+}
+
 #[doc(hidden)]
 pub trait DocxTemplate {
     /// Returns the path to the original `.docx` template file.
@@ -21,7 +65,7 @@ pub trait DocxTemplate {
 pub fn save_docx<T: DocxTemplate, P: AsRef<Path>>(
     template: &T,
     output_path: P,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), TemplateError> {
     save_docx_from_file(template.template_path(), output_path.as_ref(), &template.replacements())
 }
 
@@ -29,7 +73,7 @@ fn save_docx_from_file(
     template_path: &Path,
     output_path: &Path,
     replacements: &[(&str, &str)],
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), TemplateError> {
     let template_bytes = std::fs::read(template_path)?;
     save_docx_bytes(&template_bytes, output_path, replacements)
 }
@@ -38,7 +82,7 @@ fn save_docx_from_file(
 pub fn build_docx_bytes(
     template_bytes: &[u8],
     replacements: &[(&str, &str)],
-) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+) -> Result<Vec<u8>, TemplateError> {
     let cursor = Cursor::new(template_bytes);
     let mut archive = zip::read::ZipArchive::new(cursor)?;
 
@@ -72,7 +116,7 @@ pub fn save_docx_bytes(
     template_bytes: &[u8],
     output_path: &Path,
     replacements: &[(&str, &str)],
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), TemplateError> {
     let bytes = build_docx_bytes(template_bytes, replacements)?;
     if let Some(parent) = output_path.parent() {
         std::fs::create_dir_all(parent)?;
