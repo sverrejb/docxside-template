@@ -275,6 +275,150 @@ mod tests {
     }
 
     #[test]
+    fn replace_whitespace_placeholder_split_across_runs() {
+        // Mimics Word splitting "{ foo }" across 5 <w:t> tags
+        let xml = r#"<w:t>{</w:t><w:t xml:space="preserve"> </w:t><w:t>foo</w:t><w:t xml:space="preserve"> </w:t><w:t>}</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{ foo }", "bar")]);
+        assert!(
+            !result.contains("foo"),
+            "placeholder not replaced: {}",
+            result
+        );
+        assert!(result.contains("bar"), "value not present: {}", result);
+    }
+
+    #[test]
+    fn replace_whitespace_placeholder_with_prooferr_between_runs() {
+        // Exact XML from Word: proofErr tag sits between <w:t> runs
+        let xml = concat!(
+            r#"<w:r><w:t>{foo}</w:t></w:r>"#,
+            r#"<w:r><w:t>{</w:t></w:r>"#,
+            r#"<w:r><w:t xml:space="preserve"> </w:t></w:r>"#,
+            r#"<w:r><w:t>foo</w:t></w:r>"#,
+            r#"<w:proofErr w:type="gramEnd"/>"#,
+            r#"<w:r><w:t xml:space="preserve"> </w:t></w:r>"#,
+            r#"<w:r><w:t>}</w:t></w:r>"#,
+        );
+        let result = replace_placeholders_in_xml(
+            xml,
+            &[("{foo}", "bar"), ("{ foo }", "bar")],
+        );
+        // Both {foo} and { foo } should be replaced
+        assert!(
+            !result.contains("foo"),
+            "placeholder not replaced: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn replace_all_variants_in_full_document() {
+        // Mimics HeadFootTest.docx: {header} x2, {foo}, { foo } split, {  foo  } split
+        let xml = concat!(
+            r#"<w:t>{header}</w:t>"#,
+            r#"<w:t>{header}</w:t>"#,
+            r#"<w:t>{foo}</w:t>"#,
+            // { foo } split across 5 runs
+            r#"<w:t>{</w:t>"#,
+            r#"<w:t xml:space="preserve"> </w:t>"#,
+            r#"<w:t>foo</w:t>"#,
+            r#"<w:t xml:space="preserve"> </w:t>"#,
+            r#"<w:t>}</w:t>"#,
+            // {  foo  } split across 6 runs
+            r#"<w:t>{</w:t>"#,
+            r#"<w:t xml:space="preserve"> </w:t>"#,
+            r#"<w:t xml:space="preserve"> </w:t>"#,
+            r#"<w:t>foo</w:t>"#,
+            r#"<w:t xml:space="preserve">  </w:t>"#,
+            r#"<w:t>}</w:t>"#,
+        );
+        let result = replace_placeholders_in_xml(
+            xml,
+            &[
+                ("{header}", "TITLE"),
+                ("{foo}", "BAR"),
+                ("{ foo }", "BAR"),
+                ("{  foo  }", "BAR"),
+            ],
+        );
+        assert!(
+            !result.contains("header"),
+            "{{header}} not replaced: {}",
+            result,
+        );
+        assert!(
+            !result.contains("foo"),
+            "foo variant not replaced: {}",
+            result,
+        );
+    }
+
+    #[test]
+    fn duplicate_replacement_does_not_break_later_spans() {
+        // Simulates the pre-dedup bug: {header} appears twice in replacements
+        let xml = concat!(
+            r#"<w:t>{header}</w:t>"#,
+            r#"<w:t>{header}</w:t>"#,
+            r#"<w:t>{foo}</w:t>"#,
+            r#"<w:t>{</w:t>"#,
+            r#"<w:t xml:space="preserve"> </w:t>"#,
+            r#"<w:t>foo</w:t>"#,
+            r#"<w:t xml:space="preserve"> </w:t>"#,
+            r#"<w:t>}</w:t>"#,
+        );
+        let result = replace_placeholders_in_xml(
+            xml,
+            &[
+                // duplicate {header} — the old bug
+                ("{header}", "TITLE"),
+                ("{header}", "TITLE"),
+                ("{foo}", "BAR"),
+                ("{ foo }", "BAR"),
+            ],
+        );
+        // Check if { foo } was replaced despite the duplicate
+        assert!(
+            !result.contains("foo"),
+            "foo not replaced when duplicate header present: {}",
+            result,
+        );
+    }
+
+    #[test]
+    fn replace_headfoottest_template() {
+        let template_path = Path::new("../test-crate/templates/HeadFootTest.docx");
+        if !template_path.exists() {
+            return;
+        }
+        let template_bytes = std::fs::read(template_path).unwrap();
+        let result = build_docx_bytes(
+            &template_bytes,
+            &[
+                ("{header}", "TITLE"),
+                ("{foo}", "BAR"),
+                ("{ foo }", "BAR"),
+                ("{  foo  }", "BAR"),
+                ("{top}", "TOP"),
+                ("{bottom}", "BOT"),
+            ],
+        )
+        .unwrap();
+
+        let cursor = Cursor::new(&result);
+        let mut archive = zip::ZipArchive::new(cursor).unwrap();
+        let mut doc_xml = String::new();
+        archive
+            .by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut doc_xml)
+            .unwrap();
+
+        assert!(!doc_xml.contains("{header}"), "header placeholder not replaced");
+        assert!(!doc_xml.contains("{foo}"), "foo placeholder not replaced");
+        assert!(!doc_xml.contains("{ foo }"), "spaced foo placeholder not replaced");
+    }
+
+    #[test]
     fn build_docx_bytes_produces_valid_zip() {
         let template_path = Path::new("../test-crate/templates/HelloWorld.docx");
         if !template_path.exists() {

@@ -1,7 +1,10 @@
 extern crate proc_macro;
 mod templates;
 
-use docx_rs::{read_docx, DocumentChild::Paragraph};
+use docx_rs::{
+    read_docx, DocumentChild, FooterChild, HeaderChild, StructuredDataTagChild, Table,
+    TableCellContent, TableChild, TableRowChild,
+};
 use file_format::FileFormat;
 use proc_macro::TokenStream;
 use quote::quote;
@@ -107,15 +110,15 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
             }
         };
 
-        let corpus: Vec<String> = doc
-            .document
-            .children
-            .into_iter()
-            .filter_map(|child| match child {
-                Paragraph(p) => Some(p.raw_text()),
-                _ => None,
-            })
-            .collect();
+        let mut corpus = collect_text_from_document_children(doc.document.children);
+
+        let section = &doc.document.section_property;
+        for (_, header) in section.get_headers() {
+            corpus.extend(collect_text_from_header_children(&header.children));
+        }
+        for (_, footer) in section.get_footers() {
+            corpus.extend(collect_text_from_footer_children(&footer.children));
+        }
 
         let content = generate_struct_content(corpus);
 
@@ -245,6 +248,7 @@ struct StructContent {
 fn generate_struct_content(corpus: Vec<String>) -> StructContent {
     let re = Regex::new(r"(\{\s*[^}]+\s*\})").unwrap();
     let mut seen_fields = std::collections::HashSet::new();
+    let mut seen_placeholders = std::collections::HashSet::new();
     let mut fields = Vec::new();
     let mut replacement_placeholders = Vec::new();
     let mut replacement_fields = Vec::new();
@@ -269,8 +273,10 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
             if seen_fields.insert(field_name) {
                 fields.push(ident.clone());
             }
-            replacement_placeholders.push(syn::LitStr::new(&placeholder, span));
-            replacement_fields.push(ident);
+            if seen_placeholders.insert(placeholder.clone()) {
+                replacement_placeholders.push(syn::LitStr::new(&placeholder, span));
+                replacement_fields.push(ident);
+            }
         }
     }
 
@@ -279,6 +285,82 @@ fn generate_struct_content(corpus: Vec<String>) -> StructContent {
         replacement_placeholders,
         replacement_fields,
     }
+}
+
+fn collect_text_from_document_children(children: Vec<DocumentChild>) -> Vec<String> {
+    let mut texts = Vec::new();
+    for child in children {
+        match child {
+            DocumentChild::Paragraph(p) => texts.push(p.raw_text()),
+            DocumentChild::Table(t) => texts.extend(collect_text_from_table(&t)),
+            DocumentChild::StructuredDataTag(sdt) => {
+                texts.extend(collect_text_from_sdt_children(&sdt.children));
+            }
+            _ => {}
+        }
+    }
+    texts
+}
+
+fn collect_text_from_table(table: &Table) -> Vec<String> {
+    let mut texts = Vec::new();
+    for row in &table.rows {
+        let TableChild::TableRow(ref row) = row;
+        for cell in &row.cells {
+            let TableRowChild::TableCell(ref cell) = cell;
+            for content in &cell.children {
+                match content {
+                    TableCellContent::Paragraph(p) => texts.push(p.raw_text()),
+                    TableCellContent::Table(t) => texts.extend(collect_text_from_table(t)),
+                    _ => {}
+                }
+            }
+        }
+    }
+    texts
+}
+
+fn collect_text_from_sdt_children(children: &[StructuredDataTagChild]) -> Vec<String> {
+    let mut texts = Vec::new();
+    for child in children {
+        match child {
+            StructuredDataTagChild::Paragraph(p) => texts.push(p.raw_text()),
+            StructuredDataTagChild::Table(t) => texts.extend(collect_text_from_table(t)),
+            StructuredDataTagChild::StructuredDataTag(sdt) => {
+                texts.extend(collect_text_from_sdt_children(&sdt.children));
+            }
+            _ => {}
+        }
+    }
+    texts
+}
+
+fn collect_text_from_header_children(children: &[HeaderChild]) -> Vec<String> {
+    let mut texts = Vec::new();
+    for child in children {
+        match child {
+            HeaderChild::Paragraph(p) => texts.push(p.raw_text()),
+            HeaderChild::Table(t) => texts.extend(collect_text_from_table(t)),
+            HeaderChild::StructuredDataTag(sdt) => {
+                texts.extend(collect_text_from_sdt_children(&sdt.children));
+            }
+        }
+    }
+    texts
+}
+
+fn collect_text_from_footer_children(children: &[FooterChild]) -> Vec<String> {
+    let mut texts = Vec::new();
+    for child in children {
+        match child {
+            FooterChild::Paragraph(p) => texts.push(p.raw_text()),
+            FooterChild::Table(t) => texts.extend(collect_text_from_table(t)),
+            FooterChild::StructuredDataTag(sdt) => {
+                texts.extend(collect_text_from_sdt_children(&sdt.children));
+            }
+        }
+    }
+    texts
 }
 
 fn print_docxide_message(message: &str, path: &Path) {

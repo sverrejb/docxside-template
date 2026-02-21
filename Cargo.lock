@@ -763,6 +763,7 @@ name = "test-crate"
 version = "0.1.0"
 dependencies = [
  "docxide-template",
+ "zip 2.4.2",
 ]
 
 [[package]]
