@@ -1,6 +1,6 @@
 [package]
 name = "docxide-template-derive"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "Proc-macro internals for docxide-template — do not depend on this directly"
 license = "MIT"

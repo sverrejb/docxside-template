@@ -125,6 +125,10 @@ pub fn save_docx_bytes(
     Ok(())
 }
 
+fn escape_xml(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+}
+
 fn replace_placeholders_in_xml(xml: &str, replacements: &[(&str, &str)]) -> String {
     let mut text_spans: Vec<(usize, usize, String)> = Vec::new();
     let mut search_start = 0;
@@ -172,10 +176,10 @@ fn replace_placeholders_in_xml(xml: &str, replacements: &[(&str, &str)]) -> Stri
             let end_off_exclusive = offset_map[match_end - 1].1 + 1;
 
             if start_span == end_span {
-                span_replacements[start_span].push((start_off, end_off_exclusive, value.to_string()));
+                span_replacements[start_span].push((start_off, end_off_exclusive, escape_xml(value)));
             } else {
                 let first_span_text = &text_spans[start_span].2;
-                span_replacements[start_span].push((start_off, first_span_text.len(), value.to_string()));
+                span_replacements[start_span].push((start_off, first_span_text.len(), escape_xml(value)));
                 for mid in (start_span + 1)..end_span {
                     let mid_len = text_spans[mid].2.len();
                     span_replacements[mid].push((0, mid_len, String::new()));
@@ -435,6 +439,60 @@ mod tests {
         let cursor = Cursor::new(&result);
         let archive = zip::ZipArchive::new(cursor).expect("output should be a valid zip");
         assert!(archive.len() > 0);
+    }
+
+    #[test]
+    fn escape_xml_special_characters() {
+        let xml = r#"<w:t>{Name}</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "Alice & Bob")]);
+        assert_eq!(result, r#"<w:t>Alice &amp; Bob</w:t>"#);
+
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "<script>")]);
+        assert_eq!(result, r#"<w:t>&lt;script&gt;</w:t>"#);
+
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "a < b & c > d")]);
+        assert_eq!(result, r#"<w:t>a &lt; b &amp; c &gt; d</w:t>"#);
+    }
+
+    #[test]
+    fn escape_xml_split_across_runs() {
+        let xml = r#"<w:t>{Na</w:t><w:t>me}</w:t>"#;
+        let result = replace_placeholders_in_xml(xml, &[("{Name}", "A&B")]);
+        assert_eq!(result, r#"<w:t>A&amp;B</w:t><w:t></w:t>"#);
+    }
+
+    #[test]
+    fn escape_xml_in_headfoottest_template() {
+        let template_path = Path::new("../test-crate/templates/HeadFootTest.docx");
+        if !template_path.exists() {
+            return;
+        }
+        let template_bytes = std::fs::read(template_path).unwrap();
+        let result = build_docx_bytes(
+            &template_bytes,
+            &[
+                ("{header}", "Tom & Jerry"),
+                ("{foo}", "x < y"),
+                ("{ foo }", "x < y"),
+                ("{  foo  }", "x < y"),
+                ("{top}", "A > B"),
+                ("{bottom}", "C & D"),
+            ],
+        )
+        .unwrap();
+
+        let cursor = Cursor::new(&result);
+        let mut archive = zip::ZipArchive::new(cursor).unwrap();
+        let mut doc_xml = String::new();
+        archive
+            .by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut doc_xml)
+            .unwrap();
+
+        assert!(!doc_xml.contains("Tom & Jerry"), "raw ampersand should be escaped");
+        assert!(doc_xml.contains("Tom &amp; Jerry"), "escaped value should be present");
+        assert!(!doc_xml.contains("x < y"), "raw less-than should be escaped");
     }
 
     #[test]

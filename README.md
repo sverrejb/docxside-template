@@ -1,8 +1,5 @@
 # Docxide Template - Type safe MS Word templates for Rust.
 
-> [!WARNING]
-> Work in progress. Subject to change. Do not assume this is ready for production.
-
 `docxide-template` is a Rust crate for working with .docx / MS Word templates. It reads `.docx` template files, finds `{placeholder}` patterns in document text, and generates type-safe Rust structs with those placeholders as fields. The generated structs include a `save()` method that produces a new `.docx` with placeholders replaced by field values and a `to_bytes()` for outputting the raw bytes.
 
 ## Usage
@@ -44,7 +41,7 @@ Placeholders are converted to snake_case struct fields automatically:
 | `{last_name}` | `last_name` |
 | `{middle-name}` | `middle_name` |
 | `{companyName}` | `company_name` |
-| `{USER_COUNTRY}` | `customer_country` |
+| `{USER_COUNTRY}` | `user_country` |
 | `{first name}` | `first_name` |
 | `{ ZipCode }` | `zip_code` |
 | `{ZIPCODE}` | `zipcode` |

@@ -43,10 +43,10 @@ use templates::{derive_type_name_from_filename, placeholder_to_field_name};
 pub fn generate_templates(input: TokenStream) -> TokenStream {
     let embed = cfg!(feature = "embed");
 
-    let input_string = input.to_string();
-    let folder_path = input_string.trim_matches('"');
+    let lit: LitStr = syn::parse(input).expect("expected a string literal, e.g. generate_templates!(\"path/to/templates\")");
+    let folder_path = lit.value();
 
-    let paths = fs::read_dir(folder_path).expect("Failed to read the folder");
+    let paths = fs::read_dir(&folder_path).unwrap_or_else(|e| panic!("Failed to read template directory {:?}: {}", folder_path, e));
     let mut structs = Vec::new();
     let mut seen_type_names: HashMap<String, PathBuf> = HashMap::new();
 
