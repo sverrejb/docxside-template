@@ -1,6 +1,6 @@
 [package]
 name = "docxide-template"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Type-safe .docx template engine — generate Rust structs from Word templates with {placeholder} patterns"
 license = "MIT"
@@ -25,5 +25,5 @@ exclude = [
 embed = ["docxide-template-derive/embed"]
 
 [dependencies]
-docxide-template-derive = { path = "../docxide-template-derive", version = "0.1.0" }
+docxide-template-derive = { path = "../docxide-template-derive", version = "0.1.1" }
 zip = "2.2.2"
