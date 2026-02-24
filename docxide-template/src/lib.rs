@@ -54,75 +54,69 @@ impl From<std::string::FromUtf8Error> for TemplateError {
 }
 
 #[doc(hidden)]
-pub trait DocxTemplate {
-    /// Returns the path to the original `.docx` template file.
+pub trait DocxTemplate: __private::Sealed {
     fn template_path(&self) -> &Path;
-    /// Returns placeholder/value pairs for substitution.
     fn replacements(&self) -> Vec<(&str, &str)>;
 }
 
 #[doc(hidden)]
-pub fn save_docx<T: DocxTemplate, P: AsRef<Path>>(
-    template: &T,
-    output_path: P,
-) -> Result<(), TemplateError> {
-    save_docx_from_file(template.template_path(), output_path.as_ref(), &template.replacements())
-}
+pub mod __private {
+    use super::*;
 
-fn save_docx_from_file(
-    template_path: &Path,
-    output_path: &Path,
-    replacements: &[(&str, &str)],
-) -> Result<(), TemplateError> {
-    let template_bytes = std::fs::read(template_path)?;
-    save_docx_bytes(&template_bytes, output_path, replacements)
-}
+    pub trait Sealed {}
 
-#[doc(hidden)]
-pub fn build_docx_bytes(
-    template_bytes: &[u8],
-    replacements: &[(&str, &str)],
-) -> Result<Vec<u8>, TemplateError> {
-    let cursor = Cursor::new(template_bytes);
-    let mut archive = zip::read::ZipArchive::new(cursor)?;
+    pub fn save_docx<T: DocxTemplate, P: AsRef<Path>>(
+        template: &T,
+        output_path: P,
+    ) -> Result<(), TemplateError> {
+        let template_bytes = std::fs::read(template.template_path())?;
+        save_docx_bytes(&template_bytes, output_path.as_ref(), &template.replacements())
+    }
 
-    let mut output_buf = Cursor::new(Vec::new());
-    let mut zip_writer = zip::write::ZipWriter::new(&mut output_buf);
-    let options = zip::write::SimpleFileOptions::default();
+    pub fn build_docx_bytes(
+        template_bytes: &[u8],
+        replacements: &[(&str, &str)],
+    ) -> Result<Vec<u8>, TemplateError> {
+        let cursor = Cursor::new(template_bytes);
+        let mut archive = zip::read::ZipArchive::new(cursor)?;
 
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i)?;
-        let file_name = file.name().to_string();
+        let mut output_buf = Cursor::new(Vec::new());
+        let mut zip_writer = zip::write::ZipWriter::new(&mut output_buf);
+        let options = zip::write::SimpleFileOptions::default();
 
-        let mut contents = Vec::new();
-        file.read_to_end(&mut contents)?;
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i)?;
+            let file_name = file.name().to_string();
 
-        if file_name.ends_with(".xml") || file_name.ends_with(".rels") {
-            let xml = String::from_utf8(contents)?;
-            let replaced = replace_placeholders_in_xml(&xml, replacements);
-            contents = replaced.into_bytes();
+            let mut contents = Vec::new();
+            file.read_to_end(&mut contents)?;
+
+            if file_name.ends_with(".xml") || file_name.ends_with(".rels") {
+                let xml = String::from_utf8(contents)?;
+                let replaced = replace_placeholders_in_xml(&xml, replacements);
+                contents = replaced.into_bytes();
+            }
+
+            zip_writer.start_file(&file_name, options)?;
+            zip_writer.write_all(&contents)?;
         }
 
-        zip_writer.start_file(&file_name, options)?;
-        zip_writer.write_all(&contents)?;
+        zip_writer.finish()?;
+        Ok(output_buf.into_inner())
     }
 
-    zip_writer.finish()?;
-    Ok(output_buf.into_inner())
-}
-
-#[doc(hidden)]
-pub fn save_docx_bytes(
-    template_bytes: &[u8],
-    output_path: &Path,
-    replacements: &[(&str, &str)],
-) -> Result<(), TemplateError> {
-    let bytes = build_docx_bytes(template_bytes, replacements)?;
-    if let Some(parent) = output_path.parent() {
-        std::fs::create_dir_all(parent)?;
+    pub fn save_docx_bytes(
+        template_bytes: &[u8],
+        output_path: &Path,
+        replacements: &[(&str, &str)],
+    ) -> Result<(), TemplateError> {
+        let bytes = build_docx_bytes(template_bytes, replacements)?;
+        if let Some(parent) = output_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(output_path, bytes)?;
+        Ok(())
     }
-    std::fs::write(output_path, bytes)?;
-    Ok(())
 }
 
 fn escape_xml(s: &str) -> String {
@@ -395,7 +389,7 @@ mod tests {
             return;
         }
         let template_bytes = std::fs::read(template_path).unwrap();
-        let result = build_docx_bytes(
+        let result = __private::build_docx_bytes(
             &template_bytes,
             &[
                 ("{header}", "TITLE"),
@@ -429,7 +423,7 @@ mod tests {
             return;
         }
         let template_bytes = std::fs::read(template_path).unwrap();
-        let result = build_docx_bytes(
+        let result = __private::build_docx_bytes(
             &template_bytes,
             &[("{ firstName }", "Test"), ("{ productName }", "Lib")],
         )
@@ -468,7 +462,7 @@ mod tests {
             return;
         }
         let template_bytes = std::fs::read(template_path).unwrap();
-        let result = build_docx_bytes(
+        let result = __private::build_docx_bytes(
             &template_bytes,
             &[
                 ("{header}", "Tom & Jerry"),
@@ -502,7 +496,7 @@ mod tests {
             return;
         }
         let template_bytes = std::fs::read(template_path).unwrap();
-        let result = build_docx_bytes(
+        let result = __private::build_docx_bytes(
             &template_bytes,
             &[("{ firstName }", "Alice"), ("{ productName }", "Docxide")],
         )

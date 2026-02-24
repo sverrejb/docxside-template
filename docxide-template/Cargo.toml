@@ -14,8 +14,6 @@ exclude = [
     "output/",
     "lancedb/",
     "models/",
-    "todos.md",
-    ".plan.md",
     ".claude/",
     "CLAUDE.md",
     "ROADMAP.md",

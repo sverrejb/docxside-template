@@ -2,7 +2,6 @@ use heck::{AsSnakeCase, ToPascalCase};
 use std::path::Path;
 
 pub fn placeholder_to_field_name(variable: &str) -> String {
-    //TODO: handle all illegal characters
     let sanitized = variable.replace(' ', "_").replace(':', "_");
     format!("{}", AsSnakeCase(sanitized))
 }

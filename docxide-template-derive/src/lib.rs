@@ -51,10 +51,8 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
     let mut seen_type_names: HashMap<String, PathBuf> = HashMap::new();
 
     for path in paths {
-        //todo: maybe recursive traversal?
         let path = path.expect("Failed to read path").path();
 
-        // TOOD: Move all validation into function
         if !is_valid_docx_file(&path) {
             print_docxide_message("Invalid template file, skipping.", &path);
             continue;
@@ -161,7 +159,7 @@ fn generate_struct(
 
             pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), docxide_template::TemplateError> {
                 use docxide_template::DocxTemplate;
-                docxide_template::save_docx_bytes(
+                docxide_template::__private::save_docx_bytes(
                     Self::TEMPLATE_BYTES,
                     path.as_ref().with_extension("docx").as_path(),
                     &self.replacements(),
@@ -170,29 +168,31 @@ fn generate_struct(
 
             pub fn to_bytes(&self) -> Result<Vec<u8>, docxide_template::TemplateError> {
                 use docxide_template::DocxTemplate;
-                docxide_template::build_docx_bytes(Self::TEMPLATE_BYTES, &self.replacements())
+                docxide_template::__private::build_docx_bytes(Self::TEMPLATE_BYTES, &self.replacements())
             }
         }
     } else {
         quote! {
             pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), docxide_template::TemplateError> {
-                docxide_template::save_docx(self, path.as_ref().with_extension("docx"))
+                docxide_template::__private::save_docx(self, path.as_ref().with_extension("docx"))
             }
 
             pub fn to_bytes(&self) -> Result<Vec<u8>, docxide_template::TemplateError> {
                 use docxide_template::DocxTemplate;
                 let template_bytes = std::fs::read(self.template_path())?;
-                docxide_template::build_docx_bytes(&template_bytes, &self.replacements())
+                docxide_template::__private::build_docx_bytes(&template_bytes, &self.replacements())
             }
         }
     };
 
     if has_fields {
         quote! {
-            #[derive(Debug)]
+            #[derive(Debug, Clone)]
             pub struct #type_ident {
                 #(pub #fields: String,)*
             }
+
+            impl docxide_template::__private::Sealed for #type_ident {}
 
             impl #type_ident {
                 pub fn new(#(#fields: impl Into<String>),*) -> Self {
@@ -216,8 +216,10 @@ fn generate_struct(
         }
     } else {
         quote! {
-            #[derive(Debug)]
+            #[derive(Debug, Clone)]
             pub struct #type_ident;
+
+            impl docxide_template::__private::Sealed for #type_ident {}
 
             impl #type_ident {
                 #save_and_bytes
