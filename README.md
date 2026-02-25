@@ -58,9 +58,11 @@ By default, `generate_templates!` reads template files from disk at runtime. If 
 cargo add docxide-template --features embed
 ```
 
-With `embed` enabled, template bytes are baked into the binary at compile time via `include_bytes!`. The same `generate_templates!` macro is used — no code changes needed.
+With `embed` enabled, template bytes are baked into the binary at compile time via `include_bytes!`. The same `generate_templates!` macro is used.
 
 ## Examples
+
+See the [`examples/`](examples/) directory for details.
 
 **Save to file** — fill a template and write it to disk:
 ```bash
@@ -76,8 +78,6 @@ cargo run -p to-bytes
 ```bash
 cargo run -p embedded
 ```
-
-See the [`examples/`](examples/) directory for source code.
 
 ## How it works
 
