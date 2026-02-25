@@ -1,22 +1,27 @@
 extern crate proc_macro;
-mod templates;
+mod codegen;
+mod docx_extract;
+mod naming;
+mod placeholders;
 
-use docx_rs::{
-    read_docx, DocumentChild, FooterChild, HeaderChild, StructuredDataTagChild, Table,
-    TableCellContent, TableChild, TableRowChild,
-};
-use file_format::FileFormat;
+use docx_rs::read_docx;
 use proc_macro::TokenStream;
 use quote::quote;
-use regex::Regex;
 use std::{
     collections::HashMap,
     fs,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use syn::{parse_str, LitStr};
-use templates::{derive_type_name_from_filename, placeholder_to_field_name};
+
+use codegen::generate_struct;
+use docx_extract::{
+    collect_text_from_document_children, collect_text_from_footer_children,
+    collect_text_from_header_children, is_valid_docx_file, print_docxide_message,
+};
+use naming::derive_type_name_from_filename;
+use placeholders::generate_struct_content;
 
 /// Scans a directory for `.docx` template files and generates a typed struct for each one.
 ///
@@ -140,239 +145,4 @@ pub fn generate_templates(input: TokenStream) -> TokenStream {
     };
 
     combined.into()
-}
-
-fn generate_struct(
-    type_ident: syn::Ident,
-    abs_path: &str,
-    fields: &[syn::Ident],
-    replacement_placeholders: &[syn::LitStr],
-    replacement_fields: &[syn::Ident],
-    embed: bool,
-) -> proc_macro2::TokenStream {
-    let has_fields = !fields.is_empty();
-    let abs_path_lit = syn::LitStr::new(abs_path, proc_macro::Span::call_site().into());
-
-    let save_and_bytes = if embed {
-        quote! {
-            const TEMPLATE_BYTES: &'static [u8] = include_bytes!(#abs_path_lit);
-
-            pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), docxide_template::TemplateError> {
-                use docxide_template::DocxTemplate;
-                docxide_template::__private::save_docx_bytes(
-                    Self::TEMPLATE_BYTES,
-                    path.as_ref().with_extension("docx").as_path(),
-                    &self.replacements(),
-                )
-            }
-
-            pub fn to_bytes(&self) -> Result<Vec<u8>, docxide_template::TemplateError> {
-                use docxide_template::DocxTemplate;
-                docxide_template::__private::build_docx_bytes(Self::TEMPLATE_BYTES, &self.replacements())
-            }
-        }
-    } else {
-        quote! {
-            pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), docxide_template::TemplateError> {
-                docxide_template::__private::save_docx(self, path.as_ref().with_extension("docx"))
-            }
-
-            pub fn to_bytes(&self) -> Result<Vec<u8>, docxide_template::TemplateError> {
-                use docxide_template::DocxTemplate;
-                let template_bytes = std::fs::read(self.template_path())?;
-                docxide_template::__private::build_docx_bytes(&template_bytes, &self.replacements())
-            }
-        }
-    };
-
-    if has_fields {
-        quote! {
-            #[derive(Debug, Clone)]
-            pub struct #type_ident {
-                #(pub #fields: String,)*
-            }
-
-            impl docxide_template::__private::Sealed for #type_ident {}
-
-            impl #type_ident {
-                pub fn new(#(#fields: impl Into<String>),*) -> Self {
-                    Self {
-                        #(#fields: #fields.into()),*
-                    }
-                }
-
-                #save_and_bytes
-            }
-
-            impl docxide_template::DocxTemplate for #type_ident {
-                fn template_path(&self) -> &std::path::Path {
-                    std::path::Path::new(#abs_path_lit)
-                }
-
-                fn replacements(&self) -> Vec<(&str, &str)> {
-                    vec![#( (#replacement_placeholders, self.#replacement_fields.as_str()), )*]
-                }
-            }
-        }
-    } else {
-        quote! {
-            #[derive(Debug, Clone)]
-            pub struct #type_ident;
-
-            impl docxide_template::__private::Sealed for #type_ident {}
-
-            impl #type_ident {
-                #save_and_bytes
-            }
-
-            impl docxide_template::DocxTemplate for #type_ident {
-                fn template_path(&self) -> &std::path::Path {
-                    std::path::Path::new(#abs_path_lit)
-                }
-
-                fn replacements(&self) -> Vec<(&str, &str)> {
-                    vec![]
-                }
-            }
-        }
-    }
-}
-
-struct StructContent {
-    /// Unique fields for the struct definition and constructor.
-    fields: Vec<proc_macro2::Ident>,
-    /// All placeholder/field pairs for replacements (may have multiple
-    /// placeholder strings mapping to the same field, e.g. `{name}` and `{ name }`).
-    replacement_placeholders: Vec<LitStr>,
-    replacement_fields: Vec<proc_macro2::Ident>,
-}
-
-fn generate_struct_content(corpus: Vec<String>) -> StructContent {
-    let re = Regex::new(r"(\{\s*[^}]+\s*\})").unwrap();
-    let mut seen_fields = std::collections::HashSet::new();
-    let mut seen_placeholders = std::collections::HashSet::new();
-    let mut fields = Vec::new();
-    let mut replacement_placeholders = Vec::new();
-    let mut replacement_fields = Vec::new();
-    let span = proc_macro::Span::call_site().into();
-
-    for text in &corpus {
-        for cap in re.captures_iter(text) {
-            let placeholder = cap[1].to_string();
-            let cleaned =
-                placeholder.trim_matches(|c: char| c == '{' || c == '}' || c.is_whitespace());
-            let field_name = placeholder_to_field_name(cleaned);
-
-            if syn::parse_str::<syn::Ident>(&field_name).is_err() {
-                println!(
-                    "\x1b[34m[Docxide-template]\x1b[0m Invalid placeholder name in file: {}",
-                    placeholder
-                );
-                continue;
-            }
-
-            let ident = syn::Ident::new(&field_name, span);
-            if seen_fields.insert(field_name) {
-                fields.push(ident.clone());
-            }
-            if seen_placeholders.insert(placeholder.clone()) {
-                replacement_placeholders.push(syn::LitStr::new(&placeholder, span));
-                replacement_fields.push(ident);
-            }
-        }
-    }
-
-    StructContent {
-        fields,
-        replacement_placeholders,
-        replacement_fields,
-    }
-}
-
-fn collect_text_from_document_children(children: Vec<DocumentChild>) -> Vec<String> {
-    let mut texts = Vec::new();
-    for child in children {
-        match child {
-            DocumentChild::Paragraph(p) => texts.push(p.raw_text()),
-            DocumentChild::Table(t) => texts.extend(collect_text_from_table(&t)),
-            DocumentChild::StructuredDataTag(sdt) => {
-                texts.extend(collect_text_from_sdt_children(&sdt.children));
-            }
-            _ => {}
-        }
-    }
-    texts
-}
-
-fn collect_text_from_table(table: &Table) -> Vec<String> {
-    let mut texts = Vec::new();
-    for row in &table.rows {
-        let TableChild::TableRow(ref row) = row;
-        for cell in &row.cells {
-            let TableRowChild::TableCell(ref cell) = cell;
-            for content in &cell.children {
-                match content {
-                    TableCellContent::Paragraph(p) => texts.push(p.raw_text()),
-                    TableCellContent::Table(t) => texts.extend(collect_text_from_table(t)),
-                    _ => {}
-                }
-            }
-        }
-    }
-    texts
-}
-
-fn collect_text_from_sdt_children(children: &[StructuredDataTagChild]) -> Vec<String> {
-    let mut texts = Vec::new();
-    for child in children {
-        match child {
-            StructuredDataTagChild::Paragraph(p) => texts.push(p.raw_text()),
-            StructuredDataTagChild::Table(t) => texts.extend(collect_text_from_table(t)),
-            StructuredDataTagChild::StructuredDataTag(sdt) => {
-                texts.extend(collect_text_from_sdt_children(&sdt.children));
-            }
-            _ => {}
-        }
-    }
-    texts
-}
-
-fn collect_text_from_header_children(children: &[HeaderChild]) -> Vec<String> {
-    let mut texts = Vec::new();
-    for child in children {
-        match child {
-            HeaderChild::Paragraph(p) => texts.push(p.raw_text()),
-            HeaderChild::Table(t) => texts.extend(collect_text_from_table(t)),
-            HeaderChild::StructuredDataTag(sdt) => {
-                texts.extend(collect_text_from_sdt_children(&sdt.children));
-            }
-        }
-    }
-    texts
-}
-
-fn collect_text_from_footer_children(children: &[FooterChild]) -> Vec<String> {
-    let mut texts = Vec::new();
-    for child in children {
-        match child {
-            FooterChild::Paragraph(p) => texts.push(p.raw_text()),
-            FooterChild::Table(t) => texts.extend(collect_text_from_table(t)),
-            FooterChild::StructuredDataTag(sdt) => {
-                texts.extend(collect_text_from_sdt_children(&sdt.children));
-            }
-        }
-    }
-    texts
-}
-
-fn print_docxide_message(message: &str, path: &Path) {
-    println!("\x1b[34m[Docxide-template]\x1b[0m {} {:?}", message, path);
-}
-
-fn is_valid_docx_file(path: &Path) -> bool {
-    if !path.is_file() {
-        return false;
-    }
-
-    matches!(FileFormat::from_file(path), Ok(fmt) if fmt.extension() == "docx")
 }
